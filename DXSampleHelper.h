@@ -11,6 +11,7 @@
 
 #pragma once
 #include <stdexcept>
+#include <atlstr.h>
 
 // Note that while ComPtr is used to manage the lifetime of resources on the CPU,
 // it has no understanding of the lifetime of resources on the GPU. Apps must account
@@ -50,8 +51,8 @@ inline void GetAssetsPath(_Out_writes_(pathSize) WCHAR* path, UINT pathSize)
     {
         throw std::exception();
     }
-
-    DWORD size = GetModuleFileName(nullptr, path, pathSize);
+    CStringA strPathA(path);
+    DWORD size = GetModuleFileName(nullptr, strPathA.GetBuffer(), pathSize);
     if (size == 0 || size == pathSize)
     {
         // Method failed or path was truncated.

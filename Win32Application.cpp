@@ -29,16 +29,17 @@ int Win32Application::Run(DXSample* pSample, HINSTANCE hInstance, int nCmdShow)
     windowClass.lpfnWndProc = WindowProc;
     windowClass.hInstance = hInstance;
     windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-    windowClass.lpszClassName = L"DXSampleClass";
+    windowClass.lpszClassName = "DXSampleClass";
     RegisterClassEx(&windowClass);
 
     RECT windowRect = { 0, 0, static_cast<LONG>(pSample->GetWidth()), static_cast<LONG>(pSample->GetHeight()) };
     AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
     // Create the window and store a handle to it.
+    CStringA title(pSample->GetTitle());
     m_hwnd = CreateWindow(
         windowClass.lpszClassName,
-        pSample->GetTitle(),
+        title.GetBuffer(),
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,
         CW_USEDEFAULT,

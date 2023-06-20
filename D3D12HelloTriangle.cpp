@@ -9,6 +9,8 @@
 //
 //*********************************************************
 
+#include <algorithm>
+#include <span>
 #include "stdafx.h"
 #include "D3D12HelloTriangle.h"
 

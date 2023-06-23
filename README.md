@@ -1,5 +1,8 @@
 # DirectX 12 Experiments
 
+## Credit
+Lots of stuff taken from Microsoft's DX12 tutorials
+
 ## Dependencies
 ```
 vcpkg install directxtk12

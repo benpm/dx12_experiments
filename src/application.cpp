@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <span>
 #include "stdafx.h"
-#include "Application.h"
+#include "application.hpp"
 
 Application::Application(UINT width, UINT height, std::wstring name) :
     DXSample(width, height, name),
@@ -162,8 +162,8 @@ void Application::LoadAssets()
         UINT compileFlags = 0;
 #endif
 
-        ThrowIfFailed(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-        ThrowIfFailed(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+        ThrowIfFailed(D3DCompileFromFile(L"src/shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+        ThrowIfFailed(D3DCompileFromFile(L"src/shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
         // Define the vertex input layout.
         D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =

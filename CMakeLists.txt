@@ -16,7 +16,7 @@ add_executable(main
 target_link_options(main PRIVATE /SUBSYSTEM:WINDOWS)
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-set_source_files_properties(shaders.hlsl PROPERTIES VS_SHADER_MODEL 5.0 VS_SHADER_FLAGS "-T vs_5_0" VS_SHADER_ENTRYPOINT "VSMain")
+set_source_files_properties(src/shaders.hlsl PROPERTIES VS_SHADER_MODEL 5.0 VS_SHADER_FLAGS "-T vs_5_0" VS_SHADER_ENTRYPOINT "VSMain")
 
 target_link_libraries(main  
     d3d12.lib dxgi.lib dxguid.lib uuid.lib

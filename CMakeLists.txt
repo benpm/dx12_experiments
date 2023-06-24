@@ -6,17 +6,13 @@ find_package(directxmath CONFIG REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 add_executable(main
-    src/main.cpp 
-    src/application.cpp 
-    src/DXSample.cpp 
-    src/stdafx.cpp 
-    src/Win32Application.cpp
-    src/shaders.hlsl
+    src/main.cpp
+    src/application.cpp
 )
 target_link_options(main PRIVATE /SUBSYSTEM:WINDOWS)
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-set_source_files_properties(src/shaders.hlsl PROPERTIES VS_SHADER_MODEL 5.0 VS_SHADER_FLAGS "-T vs_5_0" VS_SHADER_ENTRYPOINT "VSMain")
+# set_source_files_properties(src/shaders.hlsl PROPERTIES VS_SHADER_MODEL 5.0 VS_SHADER_FLAGS "-T vs_5_0" VS_SHADER_ENTRYPOINT "VSMain")
 
 target_link_libraries(main  
     d3d12.lib dxgi.lib dxguid.lib uuid.lib

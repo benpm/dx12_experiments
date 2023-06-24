@@ -1,72 +1,106 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
 #pragma once
 
-#include "DXSample.h"
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 
-using namespace DirectX;
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 
-// Note that while ComPtr is used to manage the lifetime of resources on the CPU,
-// it has no understanding of the lifetime of resources on the GPU. Apps must account
-// for the GPU lifetime of resources to avoid destroying objects that may still be
-// referenced by the GPU.
-// An example of this can be found in the class method: OnDestroy().
+#include <Windows.h>
+
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <d3dcompiler.h>
+#include <DirectXMath.h>
+#include "d3dx12.h"
+
+#include <chrono>
+#include <string>
+#include <cassert>
+#include <wrl.h>
+#include <shellapi.h>
+
 using Microsoft::WRL::ComPtr;
 
-class Application : public DXSample
+inline void ThrowIfFailed(HRESULT hr)
+{
+    if (FAILED(hr))
+    {
+        throw std::exception();
+    }
+}
+
+class Application
 {
 public:
-    Application(UINT width, UINT height, std::wstring name);
+    // Number of swap chain back buffer
+    constexpr static uint8_t nFrames = 3u;
+    // Use software rasterizer
+    bool useWarp = false;
+    // Window size
+    uint32_t clientWidth = 1280;
+    uint32_t clientHeight = 720;
+    // DX12 objects initialized
+    bool isInitialized = false;
+    // Window handle
+    HWND hWnd;
+    // Window rectangle (used to toggle fullscreen state)
+    RECT windowRect;
+    
+    // DirectX 12 Objects
+    ComPtr<ID3D12Device2> device;
+    ComPtr<ID3D12CommandQueue> commandQueue;
+    ComPtr<IDXGISwapChain4> swapChain;
+    ComPtr<ID3D12Resource> backBuffers[nFrames];
+    ComPtr<ID3D12GraphicsCommandList> commandList;
+    ComPtr<ID3D12CommandAllocator> commandAllocators[nFrames];
+    ComPtr<ID3D12DescriptorHeap> rTVDescriptorHeap;
+    UINT rTVDescriptorSize;
+    UINT currentBackBufferIndex;
 
-    virtual void OnInit();
-    virtual void OnUpdate();
-    virtual void OnRender();
-    virtual void OnDestroy();
+    // Synchronization objects
+    ComPtr<ID3D12Fence> fence;
+    uint64_t fenceValue = 0;
+    uint64_t frameFenceValues[nFrames] = {};
+    HANDLE fenceEvent;
 
-private:
-    static const UINT FrameCount = 2;
+    bool vsync = true;
+    bool tearingSupported = false;
+    bool fullscreen = false;
 
-    struct Vertex
-    {
-        XMFLOAT3 position;
-        XMFLOAT4 color;
-    };
+    void initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool tearingSupported);
 
-    // Pipeline objects.
-    CD3DX12_VIEWPORT m_viewport;
-    CD3DX12_RECT m_scissorRect;
-    ComPtr<IDXGISwapChain3> m_swapChain;
-    ComPtr<ID3D12Device> m_device;
-    ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
-    ComPtr<ID3D12CommandAllocator> m_commandAllocator;
-    ComPtr<ID3D12CommandQueue> m_commandQueue;
-    ComPtr<ID3D12RootSignature> m_rootSignature;
-    ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
-    ComPtr<ID3D12PipelineState> m_pipelineState;
-    ComPtr<ID3D12GraphicsCommandList> m_commandList;
-    UINT m_rtvDescriptorSize;
-
-    // App resources.
-    ComPtr<ID3D12Resource> m_vertexBuffer;
-    D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-
-    // Synchronization objects.
-    UINT m_frameIndex;
-    HANDLE m_fenceEvent;
-    ComPtr<ID3D12Fence> m_fence;
-    UINT64 m_fenceValue;
-
-    void LoadPipeline();
-    void LoadAssets();
-    void PopulateCommandList();
-    void WaitForPreviousFrame();
+    ComPtr<ID3D12CommandQueue> CreateCommandQueue(
+        ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type );
+    ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, 
+        ComPtr<ID3D12CommandQueue> commandQueue, 
+        uint32_t width, uint32_t height, uint32_t bufferCount);
+    // Create descriptor heap which describes the resources used in rendering
+    ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr<ID3D12Device2> device,
+        D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors);
+    // Render target views describe a resource attached to bind slot during output merge
+    void UpdateRenderTargetViews(ComPtr<ID3D12Device2> device,
+        ComPtr<IDXGISwapChain4> swapChain, ComPtr<ID3D12DescriptorHeap> descriptorHeap);
+    // Command allocator is backing mem for command lists
+    ComPtr<ID3D12CommandAllocator> CreateCommandAllocator(
+        ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type);
+    // Command lists record commands and are executed by command queue
+    ComPtr<ID3D12GraphicsCommandList> CreateCommandList(
+        ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandAllocator> commandAllocator, D3D12_COMMAND_LIST_TYPE type);
+    // Fences allow sync between CPU/GPU
+    ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device);
+    HANDLE CreateEventHandle();
+    uint64_t Signal(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, uint64_t &fenceValue);
+    void WaitForFenceValue(
+        ComPtr<ID3D12Fence> fence, uint64_t fenceValue,
+        HANDLE fenceEvent, std::chrono::milliseconds duration = std::chrono::milliseconds::max());
+    void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, uint64_t &fenceValue, HANDLE fenceEvent);
+    void Update();
+    // Clear the render target and present the backbuffer
+    void Render();
+    void Resize(uint32_t width, uint32_t height);
+    void SetFullscreen(bool fullscreen);
+    void finish();
 };

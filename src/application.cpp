@@ -8,22 +8,22 @@ void Application::initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool teari
 
     this->commandQueue = CommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
-    this->swapChain = this->CreateSwapChain(hWnd, this->commandQueue.queue,
+    this->swapChain = this->createSwapChain(hWnd, this->commandQueue.queue,
         this->clientWidth, this->clientHeight, this->nFrames);
 
     this->currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
 
-    this->rTVDescriptorHeap = this->CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, this->nFrames);
+    this->rTVDescriptorHeap = this->createDescHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, this->nFrames);
     this->rTVDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-    this->UpdateRenderTargetViews(device, this->swapChain, this->rTVDescriptorHeap);
-    this->commandList = this->commandQueue.GetCommandList();
+    this->updateRenderTargetViews(device, this->swapChain, this->rTVDescriptorHeap);
+    this->commandList = this->commandQueue.getCmdList();
     
     this->isInitialized = true;
 }
 
 // Create swap chain which describes the sequence of buffers used for rendering
-ComPtr<IDXGISwapChain4> Application::CreateSwapChain(HWND hWnd, 
+ComPtr<IDXGISwapChain4> Application::createSwapChain(HWND hWnd, 
     ComPtr<ID3D12CommandQueue> commandQueue, 
     uint32_t width, uint32_t height, uint32_t bufferCount )
 {
@@ -34,7 +34,7 @@ ComPtr<IDXGISwapChain4> Application::CreateSwapChain(HWND hWnd,
     createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 #endif
 
-    ThrowIfFailed(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory4)));
+    chkDX(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory4)));
     
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = width;
@@ -50,7 +50,7 @@ ComPtr<IDXGISwapChain4> Application::CreateSwapChain(HWND hWnd,
     // It is recommended to always allow tearing if tearing support is available.
     swapChainDesc.Flags = this->tearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
     ComPtr<IDXGISwapChain1> swapChain1;
-    ThrowIfFailed(dxgiFactory4->CreateSwapChainForHwnd(
+    chkDX(dxgiFactory4->CreateSwapChainForHwnd(
         commandQueue.Get(),
         hWnd,
         &swapChainDesc,
@@ -60,14 +60,14 @@ ComPtr<IDXGISwapChain4> Application::CreateSwapChain(HWND hWnd,
 
     // Disable the Alt+Enter fullscreen toggle feature. Switching to fullscreen
     // will be handled manually.
-    ThrowIfFailed(dxgiFactory4->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
+    chkDX(dxgiFactory4->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
 
-    ThrowIfFailed(swapChain1.As(&dxgiSwapChain4));
+    chkDX(swapChain1.As(&dxgiSwapChain4));
 
     return dxgiSwapChain4;
 }
 
-ComPtr<ID3D12DescriptorHeap> Application::CreateDescriptorHeap(ComPtr<ID3D12Device2> device,
+ComPtr<ID3D12DescriptorHeap> Application::createDescHeap(ComPtr<ID3D12Device2> device,
     D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors)
 {
     ComPtr<ID3D12DescriptorHeap> descriptorHeap;
@@ -76,12 +76,12 @@ ComPtr<ID3D12DescriptorHeap> Application::CreateDescriptorHeap(ComPtr<ID3D12Devi
     desc.NumDescriptors = numDescriptors;
     desc.Type = type;
 
-    ThrowIfFailed(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
+    chkDX(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
 
     return descriptorHeap;
 }
 
-void Application::UpdateRenderTargetViews(ComPtr<ID3D12Device2> device,
+void Application::updateRenderTargetViews(ComPtr<ID3D12Device2> device,
     ComPtr<IDXGISwapChain4> swapChain, ComPtr<ID3D12DescriptorHeap> descriptorHeap)
 {
     UINT rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -91,7 +91,7 @@ void Application::UpdateRenderTargetViews(ComPtr<ID3D12Device2> device,
     for (int i = 0; i < this->nFrames; ++i)
     {
         ComPtr<ID3D12Resource> backBuffer;
-        ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
+        chkDX(swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
 
         device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
 
@@ -101,7 +101,7 @@ void Application::UpdateRenderTargetViews(ComPtr<ID3D12Device2> device,
     }
 }
 
-void Application::Update()
+void Application::update()
 {
     static uint64_t frameCounter = 0;
     static double elapsedSeconds = 0.0;
@@ -125,10 +125,10 @@ void Application::Update()
     }
 }
 
-void Application::Render()
+void Application::render()
 {
     auto backBuffer = this->backBuffers[this->currentBackBufferIndex];
-    this->commandList = this->commandQueue.GetCommandList();
+    this->commandList = this->commandQueue.getCmdList();
 
     // Clear the render target.
     {
@@ -152,21 +152,21 @@ void Application::Render()
             D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
         this->commandList->ResourceBarrier(1, &barrier);
 
-        uint64_t fenceVal = this->commandQueue.ExecuteCommandList(this->commandList);
+        uint64_t fenceVal = this->commandQueue.execCmdList(this->commandList);
 
         UINT syncInterval = this->vsync ? 1 : 0;
         UINT presentFlags = this->tearingSupported && !this->vsync ? DXGI_PRESENT_ALLOW_TEARING : 0;
-        ThrowIfFailed(this->swapChain->Present(syncInterval, presentFlags));
+        chkDX(this->swapChain->Present(syncInterval, presentFlags));
 
         // Signal frame completion and wait
         this->frameFenceValues[this->currentBackBufferIndex] = fenceVal;
         this->currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
 
-        this->commandQueue.WaitForFenceValue(fenceVal);
+        this->commandQueue.waitForFenceVal(fenceVal);
     }
 }
 
-void Application::Resize(uint32_t width, uint32_t height)
+void Application::resize(uint32_t width, uint32_t height)
 {
     if (this->clientWidth != width || this->clientHeight != height)
     {
@@ -176,7 +176,7 @@ void Application::Resize(uint32_t width, uint32_t height)
 
         // Flush the GPU queue to make sure the swap chain's back buffers
         //  are not being referenced by an in-flight command list.
-        this->commandQueue.Flush();
+        this->commandQueue.flush();
         for (int i = 0; i < this->nFrames; ++i) {
             // Any references to the back buffers must be released
             //  before the swap chain can be resized.
@@ -190,17 +190,17 @@ void Application::Resize(uint32_t width, uint32_t height)
             this->frameFenceValues[i] = this->frameFenceValues[this->currentBackBufferIndex];
         }
         DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-        ThrowIfFailed(this->swapChain->GetDesc(&swapChainDesc));
-        ThrowIfFailed(this->swapChain->ResizeBuffers(this->nFrames, this->clientWidth, this->clientHeight,
+        chkDX(this->swapChain->GetDesc(&swapChainDesc));
+        chkDX(this->swapChain->ResizeBuffers(this->nFrames, this->clientWidth, this->clientHeight,
             swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
 
         this->currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
 
-        UpdateRenderTargetViews(this->device, this->swapChain, this->rTVDescriptorHeap);
+        updateRenderTargetViews(this->device, this->swapChain, this->rTVDescriptorHeap);
     }
 }
 
-void Application::SetFullscreen(bool fullscreen)
+void Application::setFullscreen(bool fullscreen)
 {
     if (this->fullscreen != fullscreen) {
         this->fullscreen = fullscreen;
@@ -247,5 +247,5 @@ void Application::SetFullscreen(bool fullscreen)
 
 void Application::finish()
 {
-    this->commandQueue.Flush();
+    this->commandQueue.flush();
 }

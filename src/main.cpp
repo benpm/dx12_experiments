@@ -7,8 +7,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     if (app != nullptr && app->isInitialized) {
         switch (message) {
             case WM_PAINT:
-                app->Update();
-                app->Render();
+                app->update();
+                app->render();
                 break;
             case WM_SYSKEYDOWN:
             case WM_KEYDOWN: {
@@ -24,7 +24,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     case VK_RETURN:
                         if (alt) {
                             case VK_F11:
-                            app->SetFullscreen(!app->fullscreen);
+                            app->setFullscreen(!app->fullscreen);
                         }
                         break;
                 }
@@ -41,7 +41,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 int width = clientRect.right - clientRect.left;
                 int height = clientRect.bottom - clientRect.top;
 
-                app->Resize(width, height);
+                app->resize(width, height);
             } break;
             case WM_DESTROY:
                 ::PostQuitMessage(0);
@@ -85,7 +85,7 @@ void EnableDebugLayer()
     // so all possible errors generated while creating DX12 objects
     // are caught by the debug layer.
     ComPtr<ID3D12Debug> debugInterface;
-    ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
+    chkDX(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
     debugInterface->EnableDebugLayer();
 #endif
 }
@@ -134,13 +134,13 @@ ComPtr<IDXGIAdapter4> GetAdapter(bool useWarp)
     createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 #endif
  
-    ThrowIfFailed(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory)));
+    chkDX(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory)));
     ComPtr<IDXGIAdapter1> dxgiAdapter1;
     ComPtr<IDXGIAdapter4> dxgiAdapter4;
  
     if (useWarp) {
-        ThrowIfFailed(dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&dxgiAdapter1)));
-        ThrowIfFailed(dxgiAdapter1.As(&dxgiAdapter4));
+        chkDX(dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&dxgiAdapter1)));
+        chkDX(dxgiAdapter1.As(&dxgiAdapter4));
     } else {
         SIZE_T maxDedicatedVideoMemory = 0;
         for (UINT i = 0; dxgiFactory->EnumAdapters1(i, &dxgiAdapter1) != DXGI_ERROR_NOT_FOUND; ++i)
@@ -157,7 +157,7 @@ ComPtr<IDXGIAdapter4> GetAdapter(bool useWarp)
                 dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory )
             {
                 maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
-                ThrowIfFailed(dxgiAdapter1.As(&dxgiAdapter4));
+                chkDX(dxgiAdapter1.As(&dxgiAdapter4));
             }
         }
     }
@@ -169,7 +169,7 @@ ComPtr<IDXGIAdapter4> GetAdapter(bool useWarp)
 ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter)
 {
     ComPtr<ID3D12Device2> d3d12Device2;
-    ThrowIfFailed(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));
+    chkDX(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));
     // Enable debug messages in debug mode.
 #if defined(_DEBUG)
     ComPtr<ID3D12InfoQueue> pInfoQueue;
@@ -202,7 +202,7 @@ ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter)
         NewFilter.DenyList.NumIDs = _countof(DenyIds);
         NewFilter.DenyList.pIDList = DenyIds;
  
-        ThrowIfFailed(pInfoQueue->PushStorageFilter(&NewFilter));
+        chkDX(pInfoQueue->PushStorageFilter(&NewFilter));
     }
 #endif
  

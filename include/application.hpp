@@ -38,19 +38,19 @@ public:
 
     void initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool tearingSupported);
 
-    ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, 
+    ComPtr<IDXGISwapChain4> createSwapChain(HWND hWnd, 
         ComPtr<ID3D12CommandQueue> commandQueue, 
         uint32_t width, uint32_t height, uint32_t bufferCount);
     // Create descriptor heap which describes the resources used in rendering
-    ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr<ID3D12Device2> device,
+    ComPtr<ID3D12DescriptorHeap> createDescHeap(ComPtr<ID3D12Device2> device,
         D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors);
     // Render target views describe a resource attached to bind slot during output merge
-    void UpdateRenderTargetViews(ComPtr<ID3D12Device2> device,
+    void updateRenderTargetViews(ComPtr<ID3D12Device2> device,
         ComPtr<IDXGISwapChain4> swapChain, ComPtr<ID3D12DescriptorHeap> descriptorHeap);
-    void Update();
+    void update();
     // Clear the render target and present the backbuffer
-    void Render();
-    void Resize(uint32_t width, uint32_t height);
-    void SetFullscreen(bool fullscreen);
+    void render();
+    void resize(uint32_t width, uint32_t height);
+    void setFullscreen(bool fullscreen);
     void finish();
 };

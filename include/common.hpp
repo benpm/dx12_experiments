@@ -16,7 +16,7 @@
 
 using Microsoft::WRL::ComPtr;
 
-inline void ThrowIfFailed(HRESULT hr)
+inline void chkDX(HRESULT hr)
 {
     if (FAILED(hr))
     {

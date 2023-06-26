@@ -21,20 +21,16 @@ public:
     
     // DirectX 12 Objects
     ComPtr<ID3D12Device2> device;
-    ComPtr<ID3D12CommandQueue> commandQueue;
+    CommandQueue commandQueue;
     ComPtr<IDXGISwapChain4> swapChain;
     ComPtr<ID3D12Resource> backBuffers[nFrames];
-    ComPtr<ID3D12GraphicsCommandList> commandList;
-    ComPtr<ID3D12CommandAllocator> commandAllocators[nFrames];
+    ComPtr<ID3D12GraphicsCommandList2> commandList;
     ComPtr<ID3D12DescriptorHeap> rTVDescriptorHeap;
     UINT rTVDescriptorSize;
     UINT currentBackBufferIndex;
 
     // Synchronization objects
-    ComPtr<ID3D12Fence> fence;
-    uint64_t fenceValue = 0;
     uint64_t frameFenceValues[nFrames] = {};
-    HANDLE fenceEvent;
 
     bool vsync = true;
     bool tearingSupported = false;
@@ -42,8 +38,6 @@ public:
 
     void initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool tearingSupported);
 
-    ComPtr<ID3D12CommandQueue> CreateCommandQueue(
-        ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type );
     ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, 
         ComPtr<ID3D12CommandQueue> commandQueue, 
         uint32_t width, uint32_t height, uint32_t bufferCount);
@@ -53,20 +47,6 @@ public:
     // Render target views describe a resource attached to bind slot during output merge
     void UpdateRenderTargetViews(ComPtr<ID3D12Device2> device,
         ComPtr<IDXGISwapChain4> swapChain, ComPtr<ID3D12DescriptorHeap> descriptorHeap);
-    // Command allocator is backing mem for command lists
-    ComPtr<ID3D12CommandAllocator> CreateCommandAllocator(
-        ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type);
-    // Command lists record commands and are executed by command queue
-    ComPtr<ID3D12GraphicsCommandList> CreateCommandList(
-        ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandAllocator> commandAllocator, D3D12_COMMAND_LIST_TYPE type);
-    // Fences allow sync between CPU/GPU
-    ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device);
-    HANDLE CreateEventHandle();
-    uint64_t Signal(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, uint64_t &fenceValue);
-    void WaitForFenceValue(
-        ComPtr<ID3D12Fence> fence, uint64_t fenceValue,
-        HANDLE fenceEvent, std::chrono::milliseconds duration = std::chrono::milliseconds::max());
-    void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, uint64_t &fenceValue, HANDLE fenceEvent);
     void Update();
     // Clear the render target and present the backbuffer
     void Render();

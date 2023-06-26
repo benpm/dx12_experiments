@@ -1,7 +1,7 @@
 #include <command_queue.hpp>
 
 CommandQueue::CommandQueue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type)
-    : device(device)
+    : fenceValue(0), device(device), type(type)
 {
     D3D12_COMMAND_QUEUE_DESC desc = {};
     desc.Type =     type;
@@ -10,6 +10,10 @@ CommandQueue::CommandQueue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE
     desc.NodeMask = 0;
  
     ThrowIfFailed(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&this->queue)));
+    ThrowIfFailed(device->CreateFence(this->fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence)));
+    this->fenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+    assert(this->fenceEvent && "Failed to create fence event handle.");
 }
 
 // Get or create a commandlist, using next available command allocator
@@ -106,9 +110,7 @@ ComPtr<ID3D12GraphicsCommandList2> CommandQueue::CreateCommandList(ComPtr<ID3D12
 {
     ComPtr<ID3D12GraphicsCommandList2> commandList;
     ThrowIfFailed(device->CreateCommandList(
-        0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.Get(), nullptr, IID_PPV_ARGS(&commandList)));
+        0, this->type, allocator.Get(), nullptr, IID_PPV_ARGS(&commandList)));
     
-    ThrowIfFailed(commandList->Close());
-
     return commandList;
 }

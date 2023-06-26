@@ -6,6 +6,9 @@
 class CommandQueue
 {
 public:
+    ComPtr<ID3D12CommandQueue> queue;
+
+    CommandQueue() = default;
     CommandQueue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type);
 
     ComPtr<ID3D12GraphicsCommandList2> GetCommandList();
@@ -16,7 +19,6 @@ public:
     void Flush();
     
 private:
-    ComPtr<ID3D12CommandQueue> queue;
     ComPtr<ID3D12Device2> device;
 
     ComPtr<ID3D12Fence> fence;

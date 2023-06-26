@@ -6,9 +6,9 @@ void Application::initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool teari
     this->device = device;
     this->tearingSupported = tearingSupported;
 
-    this->commandQueue = this->CreateCommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+    this->commandQueue = CommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
-    this->swapChain = this->CreateSwapChain(hWnd, this->commandQueue,
+    this->swapChain = this->CreateSwapChain(hWnd, this->commandQueue.queue,
         this->clientWidth, this->clientHeight, this->nFrames);
 
     this->currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
@@ -17,32 +17,9 @@ void Application::initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool teari
     this->rTVDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
     this->UpdateRenderTargetViews(device, this->swapChain, this->rTVDescriptorHeap);
-    for (int i = 0; i < this->nFrames; ++i) {
-        this->commandAllocators[i] = this->CreateCommandAllocator(this->device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-    }
-    this->commandList = this->CreateCommandList(this->device,
-        this->commandAllocators[this->currentBackBufferIndex], D3D12_COMMAND_LIST_TYPE_DIRECT);
-
-    this->fence = this->CreateFence(this->device);
-    this->fenceEvent = CreateEventHandle();
+    this->commandList = this->commandQueue.GetCommandList();
     
     this->isInitialized = true;
-}
-
-// Create the command queue using the given device, of given type (direct, compute, copy)
-ComPtr<ID3D12CommandQueue> Application::CreateCommandQueue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type )
-{
-    ComPtr<ID3D12CommandQueue> d3d12CommandQueue;
- 
-    D3D12_COMMAND_QUEUE_DESC desc = {};
-    desc.Type =     type;
-    desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-    desc.Flags =    D3D12_COMMAND_QUEUE_FLAG_NONE;
-    desc.NodeMask = 0;
- 
-    ThrowIfFailed(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&d3d12CommandQueue)));
- 
-    return d3d12CommandQueue;
 }
 
 // Create swap chain which describes the sequence of buffers used for rendering
@@ -124,74 +101,6 @@ void Application::UpdateRenderTargetViews(ComPtr<ID3D12Device2> device,
     }
 }
 
-ComPtr<ID3D12CommandAllocator> Application::CreateCommandAllocator(
-    ComPtr<ID3D12Device2> device,
-    D3D12_COMMAND_LIST_TYPE type)
-{
-    ComPtr<ID3D12CommandAllocator> commandAllocator;
-    ThrowIfFailed(device->CreateCommandAllocator(type, IID_PPV_ARGS(&commandAllocator)));
-
-    return commandAllocator;
-}
-
-ComPtr<ID3D12GraphicsCommandList> Application::CreateCommandList(ComPtr<ID3D12Device2> device,
-    ComPtr<ID3D12CommandAllocator> commandAllocator, D3D12_COMMAND_LIST_TYPE type)
-{
-    ComPtr<ID3D12GraphicsCommandList> commandList;
-    ThrowIfFailed(device->CreateCommandList(0, type, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList)));
-    
-    ThrowIfFailed(commandList->Close());
-
-    return commandList;
-}
-
-ComPtr<ID3D12Fence> Application::CreateFence(ComPtr<ID3D12Device2> device)
-{
-    ComPtr<ID3D12Fence> fence;
-
-    ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
-
-    return fence;
-}
-
-HANDLE Application::CreateEventHandle()
-{
-    HANDLE fenceEvent;
-    
-    fenceEvent = ::CreateEvent(NULL, FALSE, FALSE, NULL);
-    assert(fenceEvent && "Failed to create fence event.");
-
-    return fenceEvent;
-}
-
-uint64_t Application::Signal(
-    ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence,
-    uint64_t& fenceValue)
-{
-    uint64_t fenceValueForSignal = ++fenceValue;
-    ThrowIfFailed(commandQueue->Signal(fence.Get(), fenceValueForSignal));
-
-    return fenceValueForSignal;
-}
-
-void Application::WaitForFenceValue(
-    ComPtr<ID3D12Fence> fence, uint64_t fenceValue, HANDLE fenceEvent,
-    std::chrono::milliseconds duration)
-{
-    if (fence->GetCompletedValue() < fenceValue)
-    {
-        ThrowIfFailed(fence->SetEventOnCompletion(fenceValue, fenceEvent));
-        ::WaitForSingleObject(fenceEvent, static_cast<DWORD>(duration.count()));
-    }
-}
-
-void Application::Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence,
-    uint64_t& fenceValue, HANDLE fenceEvent )
-{
-    uint64_t fenceValueForSignal = this->Signal(commandQueue, fence, fenceValue);
-    this->WaitForFenceValue(fence, fenceValueForSignal, fenceEvent);
-}
-
 void Application::Update()
 {
     static uint64_t frameCounter = 0;
@@ -218,13 +127,12 @@ void Application::Update()
 
 void Application::Render()
 {
-    auto commandAllocator = this->commandAllocators[this->currentBackBufferIndex];
     auto backBuffer = this->backBuffers[this->currentBackBufferIndex];
+    this->commandList = this->commandQueue.GetCommandList();
 
-    commandAllocator->Reset();
-    this->commandList->Reset(commandAllocator.Get(), nullptr);
     // Clear the render target.
     {
+        // Transition backbuffer to render target state
         CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
             backBuffer.Get(),
             D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -243,21 +151,18 @@ void Application::Render()
             backBuffer.Get(),
             D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
         this->commandList->ResourceBarrier(1, &barrier);
-        ThrowIfFailed(this->commandList->Close());
 
-        ID3D12CommandList* const commandLists[] = {
-            this->commandList.Get()
-        };
-        this->commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+        uint64_t fenceVal = this->commandQueue.ExecuteCommandList(this->commandList);
+
         UINT syncInterval = this->vsync ? 1 : 0;
         UINT presentFlags = this->tearingSupported && !this->vsync ? DXGI_PRESENT_ALLOW_TEARING : 0;
         ThrowIfFailed(this->swapChain->Present(syncInterval, presentFlags));
 
         // Signal frame completion and wait
-        this->frameFenceValues[this->currentBackBufferIndex] = Signal(this->commandQueue, this->fence, this->fenceValue);
+        this->frameFenceValues[this->currentBackBufferIndex] = fenceVal;
         this->currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
 
-        WaitForFenceValue(this->fence, this->frameFenceValues[this->currentBackBufferIndex], this->fenceEvent);
+        this->commandQueue.WaitForFenceValue(fenceVal);
     }
 }
 
@@ -271,7 +176,7 @@ void Application::Resize(uint32_t width, uint32_t height)
 
         // Flush the GPU queue to make sure the swap chain's back buffers
         //  are not being referenced by an in-flight command list.
-        Flush(this->commandQueue, this->fence, this->fenceValue, this->fenceEvent);
+        this->commandQueue.Flush();
         for (int i = 0; i < this->nFrames; ++i) {
             // Any references to the back buffers must be released
             //  before the swap chain can be resized.
@@ -342,6 +247,5 @@ void Application::SetFullscreen(bool fullscreen)
 
 void Application::finish()
 {
-    this->Flush(this->commandQueue, this->fence, this->fenceValue, this->fenceEvent);
-    ::CloseHandle(this->fenceEvent);
+    this->commandQueue.Flush();
 }

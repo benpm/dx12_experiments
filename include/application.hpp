@@ -36,7 +36,8 @@ public:
     bool tearingSupported = false;
     bool fullscreen = false;
 
-    void initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool tearingSupported);
+    Application();
+    ~Application();
 
     ComPtr<IDXGISwapChain4> createSwapChain(HWND hWnd, 
         ComPtr<ID3D12CommandQueue> commandQueue, 

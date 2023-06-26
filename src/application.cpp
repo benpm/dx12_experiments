@@ -1,10 +1,9 @@
 #include <application.hpp>
+#include <window.hpp>
 
-void Application::initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool tearingSupported)
+Application::Application()
 {
-    this->hWnd = hWnd;
-    this->device = device;
-    this->tearingSupported = tearingSupported;
+    Window::get()->registerApp(this);
 
     this->commandQueue = CommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
@@ -20,6 +19,11 @@ void Application::initialize(HWND hWnd, ComPtr<ID3D12Device2> device, bool teari
     this->commandList = this->commandQueue.getCmdList();
     
     this->isInitialized = true;
+}
+
+Application::~Application()
+{
+    this->finish();
 }
 
 // Create swap chain which describes the sequence of buffers used for rendering

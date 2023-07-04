@@ -2,15 +2,13 @@
 
 #include <command_queue.hpp>
 
-struct VertexPosColor
-{
+struct VertexPosColor {
     XMFLOAT3 position;
     XMFLOAT3 color;
 };
 
-class Application
-{
-public:
+class Application {
+   public:
     // Number of swap chain back buffer
     constexpr static uint8_t nBuffers = 3u;
     // Use software rasterizer
@@ -24,7 +22,7 @@ public:
     HWND hWnd;
     // Window rectangle (used to toggle fullscreen state)
     RECT windowRect;
-    
+
     // DirectX 12 Objects
     ComPtr<ID3D12Device2> device;
     CommandQueue cmdQueue;
@@ -65,26 +63,35 @@ public:
 
     // Transition a resource
     void transitionResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
-        ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState,
+        ComPtr<ID3D12Resource> resource,
+        D3D12_RESOURCE_STATES beforeState,
         D3D12_RESOURCE_STATES afterState);
     // Clear a render target view
     void clearRTV(ComPtr<ID3D12GraphicsCommandList2> commandList,
-        D3D12_CPU_DESCRIPTOR_HANDLE rtv, FLOAT clearColor[4]);
+        D3D12_CPU_DESCRIPTOR_HANDLE rtv,
+        FLOAT clearColor[4]);
     // Clear the depth of a depth-stencil view
     void clearDepth(ComPtr<ID3D12GraphicsCommandList2> commandList,
-        D3D12_CPU_DESCRIPTOR_HANDLE dsv, FLOAT depth = 1.0f);
-    // Create buffer large enough for data, and upload buffer used to transfer to GPU
+        D3D12_CPU_DESCRIPTOR_HANDLE dsv,
+        FLOAT depth = 1.0f);
+    // Create buffer large enough for data, and upload buffer used to transfer
+    // to GPU
     void updateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
-        ID3D12Resource** pDestinationResource, ID3D12Resource** pIntermediateResource,
-        size_t numElements, size_t elementSize, const void* bufferData = nullptr,
+        ID3D12Resource** pDestinationResource,
+        ID3D12Resource** pIntermediateResource,
+        size_t numElements,
+        size_t elementSize,
+        const void* bufferData = nullptr,
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
     // Resize the depth buffer to match the size of the client area
     void resizeDepthBuffer(uint32_t width, uint32_t height);
     // Create a swap chain
     ComPtr<IDXGISwapChain4> createSwapChain();
     // Create descriptor heap which describes the resources used in rendering
-    ComPtr<ID3D12DescriptorHeap> createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors);
-    // Render target views describe a resource attached to bind slot during output merge
+    ComPtr<ID3D12DescriptorHeap> createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE type,
+        uint32_t numDescriptors);
+    // Render target views describe a resource attached to bind slot during
+    // output merge
     void updateRenderTargetViews(ComPtr<ID3D12DescriptorHeap> descriptorHeap);
     void update();
     // Clear the render target and present the backbuffer

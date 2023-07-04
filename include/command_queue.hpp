@@ -3,9 +3,8 @@
 #include <common.hpp>
 #include <queue>
 
-class CommandQueue
-{
-public:
+class CommandQueue {
+   public:
     ComPtr<ID3D12CommandQueue> queue;
 
     CommandQueue() = default;
@@ -17,16 +16,15 @@ public:
     bool isFenceComplete(uint64_t fval);
     void waitForFenceVal(uint64_t fval);
     void flush();
-    
-private:
+
+   private:
     ComPtr<ID3D12Device2> device;
 
     ComPtr<ID3D12Fence> fence;
     uint64_t fenceValue = 0;
     HANDLE fenceEvent;
 
-    struct CmdAllocEntry
-    {
+    struct CmdAllocEntry {
         uint64_t fenceValue;
         ComPtr<ID3D12CommandAllocator> commandAllocator;
     };
@@ -36,5 +34,6 @@ private:
     std::queue<ComPtr<ID3D12GraphicsCommandList2>> cmdListQueue;
 
     ComPtr<ID3D12CommandAllocator> createCmdAlloc();
-    ComPtr<ID3D12GraphicsCommandList2> createCmdList(ComPtr<ID3D12CommandAllocator> allocator);
+    ComPtr<ID3D12GraphicsCommandList2> createCmdList(
+        ComPtr<ID3D12CommandAllocator> allocator);
 };

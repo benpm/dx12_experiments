@@ -1,13 +1,14 @@
 #include <window.hpp>
 
-_Use_decl_annotations_
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
-{
+_Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance,
+    HINSTANCE,
+    LPSTR,
+    int) {
     setupLogging();
 
     Window::get()->initialize(hInstance, "D3D12 Experiment", 1280, 720);
     Application app;
- 
+
     MSG msg = {};
     while (msg.message != WM_QUIT) {
         if (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {

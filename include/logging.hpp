@@ -1,10 +1,10 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/base_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/sinks/base_sink.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include <spdlog/details/log_msg.h>
 #include <spdlog/details/null_mutex.h>
@@ -16,53 +16,55 @@
 #include <mutex>
 #include <string>
 
-#include <locale>
-#include <codecvt>
-#include <windows.h>
-#include <processthreadsapi.h>
 #include <comdef.h>
+#include <processthreadsapi.h>
+#include <windows.h>
+#include <codecvt>
+#include <locale>
 
 namespace spdlog::sinks {
-    template<typename Mutex>
-    class error_proxy_sink : public base_sink<Mutex> {
-    /* Thanks to @tt4g for this class (https://github.com/gabime/spdlog/issues/1363#issuecomment-567068416) */
-    private:
-        using BaseSink = base_sink<Mutex>;
+template <typename Mutex>
+class error_proxy_sink : public base_sink<Mutex> {
+    /* Thanks to @tt4g for this class
+     * (https://github.com/gabime/spdlog/issues/1363#issuecomment-567068416) */
+   private:
+    using BaseSink = base_sink<Mutex>;
 
-        std::shared_ptr<sink> sink_;
+    std::shared_ptr<sink> sink_;
 
-    public:
-        explicit error_proxy_sink(std::shared_ptr<sink> sink) : sink_(sink){}
+   public:
+    explicit error_proxy_sink(std::shared_ptr<sink> sink) : sink_(sink) {}
 
-        error_proxy_sink(const error_proxy_sink&) = delete;
-        error_proxy_sink& operator=(const error_proxy_sink&) = delete;
-    protected:
-        void sink_it_(const spdlog::details::log_msg &msg) override {
-            if (sink_->should_log(msg.level)) {
-                sink_->log(msg);
-            }
-            if (spdlog::level::err == msg.level) {
-                std::raise(SIGINT);
-            }
+    error_proxy_sink(const error_proxy_sink&) = delete;
+    error_proxy_sink& operator=(const error_proxy_sink&) = delete;
+
+   protected:
+    void sink_it_(const spdlog::details::log_msg& msg) override {
+        if (sink_->should_log(msg.level)) {
+            sink_->log(msg);
         }
-
-        void flush_() override {
-            sink_->flush();
+        if (spdlog::level::err == msg.level) {
+            std::raise(SIGINT);
         }
+    }
 
-        void set_pattern_(const std::string &pattern) override {
-            set_formatter_(spdlog::details::make_unique<spdlog::pattern_formatter>(pattern));
-        }
+    void flush_() override { sink_->flush(); }
 
-        void set_formatter_(std::unique_ptr<spdlog::formatter> sink_formatter) override {
-            BaseSink::formatter_ = std::move(sink_formatter);
+    void set_pattern_(const std::string& pattern) override {
+        set_formatter_(
+            spdlog::details::make_unique<spdlog::pattern_formatter>(pattern));
+    }
 
-            sink_->set_formatter(BaseSink::formatter_->clone());
-        }
-    };
+    void set_formatter_(
+        std::unique_ptr<spdlog::formatter> sink_formatter) override {
+        BaseSink::formatter_ = std::move(sink_formatter);
 
-    using error_proxy_sink_mt = error_proxy_sink<std::mutex>;
-    using error_proxy_sink_st = error_proxy_sink<spdlog::details::null_mutex>;
-}
+        sink_->set_formatter(BaseSink::formatter_->clone());
+    }
+};
+
+using error_proxy_sink_mt = error_proxy_sink<std::mutex>;
+using error_proxy_sink_st = error_proxy_sink<spdlog::details::null_mutex>;
+}  // namespace spdlog::sinks
 
 void setupLogging();

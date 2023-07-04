@@ -19,6 +19,25 @@
 				"clear": true
 			},
 			"detail": "CMake template build task"
+		},
+		{
+			"type": "process",
+			"label": "Clang Format",
+			"command": "clang-format",
+			"args": [
+				"-i",
+				"src/*.cpp",
+				"-i",
+				"include/*.hpp"
+			],
+			"presentation": {
+				"reveal": "never",
+				"clear": true
+			},
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
 		}
 	]
 }

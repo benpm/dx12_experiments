@@ -1,0 +1,5 @@
+BasedOnStyle: Chromium
+IndentWidth: 4
+IndentPPDirectives: BeforeHash
+InsertBraces: true
+AlignAfterOpenBracket: DontAlign

@@ -14,6 +14,11 @@
             "cwd": "${workspaceFolder}/build/Debug",
             "environment": [],
             "console": "internalConsole",
+            "internalConsoleOptions": "openOnSessionStart",
+            "logging": {
+                "moduleLoad": false,
+                "engineLogging": false
+            },
             "preLaunchTask": "CMake: build"
         }
     ]

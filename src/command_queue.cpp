@@ -69,16 +69,16 @@ uint64_t CommandQueue::signal()
     return fenceValueForSignal;
 }
 
-bool CommandQueue::isFenceComplete(uint64_t fenceValue)
+bool CommandQueue::isFenceComplete(uint64_t fval)
 {
-    return (this->fence->GetCompletedValue() >= fenceValue);
+    return (this->fence->GetCompletedValue() >= fval);
 }
 
-void CommandQueue::waitForFenceVal(uint64_t fenceValue)
+void CommandQueue::waitForFenceVal(uint64_t fval)
 {
-    if (!this->isFenceComplete(fenceValue))
+    if (!this->isFenceComplete(fval))
     {
-        chkDX(fence->SetEventOnCompletion(fenceValue, fenceEvent));
+        chkDX(fence->SetEventOnCompletion(fval, fenceEvent));
         WaitForSingleObject(fenceEvent, INFINITE);
     }
 }

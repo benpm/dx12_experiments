@@ -12,7 +12,7 @@ class Application
 {
 public:
     // Number of swap chain back buffer
-    constexpr static uint8_t nFrames = 3u;
+    constexpr static uint8_t nBuffers = 3u;
     // Use software rasterizer
     bool useWarp = false;
     // Window size
@@ -29,7 +29,7 @@ public:
     ComPtr<ID3D12Device2> device;
     CommandQueue cmdQueue;
     ComPtr<IDXGISwapChain4> swapChain;
-    ComPtr<ID3D12Resource> backBuffers[nFrames];
+    ComPtr<ID3D12Resource> backBuffers[nBuffers];
     // Render target view descriptor heap
     ComPtr<ID3D12DescriptorHeap> rtvHeap;
     UINT rtvDescSize;
@@ -48,13 +48,13 @@ public:
     // Masks out a region of the screen for rendering
     D3D12_RECT scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
     float fov = 45.0f;
-    XMFLOAT4X4 matModel;
-    XMFLOAT4X4 matView;
-    XMFLOAT4X4 matProj;
+    XMMATRIX matModel;
+    XMMATRIX matView;
+    XMMATRIX matProj;
     bool contentLoaded = false;
 
     // Synchronization objects
-    uint64_t frameFenceValues[nFrames] = {};
+    uint64_t frameFenceValues[nBuffers] = {};
 
     bool vsync = true;
     bool tearingSupported = false;
@@ -81,20 +81,16 @@ public:
     // Resize the depth buffer to match the size of the client area
     void resizeDepthBuffer(uint32_t width, uint32_t height);
     // Create a swap chain
-    ComPtr<IDXGISwapChain4> createSwapChain(HWND hWnd, 
-        ComPtr<ID3D12CommandQueue> commandQueue, 
-        uint32_t width, uint32_t height, uint32_t bufferCount);
+    ComPtr<IDXGISwapChain4> createSwapChain();
     // Create descriptor heap which describes the resources used in rendering
-    ComPtr<ID3D12DescriptorHeap> createDescHeap(ComPtr<ID3D12Device2> device,
-        D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors);
+    ComPtr<ID3D12DescriptorHeap> createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors);
     // Render target views describe a resource attached to bind slot during output merge
-    void updateRenderTargetViews(ComPtr<ID3D12Device2> device,
-        ComPtr<IDXGISwapChain4> swapChain, ComPtr<ID3D12DescriptorHeap> descriptorHeap);
+    void updateRenderTargetViews(ComPtr<ID3D12DescriptorHeap> descriptorHeap);
     void update();
     // Clear the render target and present the backbuffer
     void render();
     void resize(uint32_t width, uint32_t height);
-    void setFullscreen(bool fullscreen);
+    void setFullscreen(bool val);
     void flush();
     void onKeyPressed(UINT key, bool alt);
     bool loadContent();

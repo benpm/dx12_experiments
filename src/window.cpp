@@ -24,11 +24,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             case WM_SIZE: {
                 RECT clientRect = {};
                 ::GetClientRect(app->hWnd, &clientRect);
-
-                int width = clientRect.right - clientRect.left;
-                int height = clientRect.bottom - clientRect.top;
-                spdlog::debug("WM_SIZE {} {}", width, height);
-                app->resize(width, height);
+                app->resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
             } break;
             case WM_DESTROY:
                 ::PostQuitMessage(0);
@@ -223,19 +219,19 @@ bool CheckTearingSupport()
     return allowTearing == TRUE;
 }
 
-void Window::registerApp(Application* app)
+void Window::registerApp(Application* application)
 {
     assert(this->app == nullptr);
     
-    this->app = app;
-    app->hWnd = this->hWnd;
-    app->device = this->device;
-    app->tearingSupported = this->tearingSupported;
-    app->clientWidth = this->width;
-    app->clientHeight = this->height;
+    this->app = application;
+    this->app->hWnd = this->hWnd;
+    this->app->device = this->device;
+    this->app->tearingSupported = this->tearingSupported;
+    this->app->clientWidth = this->width;
+    this->app->clientHeight = this->height;
 }
 
-void Window::initialize(HINSTANCE hInstance, const std::string &title, uint32_t width, uint32_t height)
+void Window::initialize(HINSTANCE hInstance, const std::string &title, uint32_t w, uint32_t h)
 {
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
@@ -246,12 +242,12 @@ void Window::initialize(HINSTANCE hInstance, const std::string &title, uint32_t 
     const wchar_t* windowClassName = L"DX12WindowClass";
     RegisterWindowClass(hInstance, windowClassName);
     const std::wstring wTitle(title.begin(), title.end());
-    this->hWnd = MakeWindow(windowClassName, hInstance, wTitle.c_str(), width, height);
+    this->hWnd = MakeWindow(windowClassName, hInstance, wTitle.c_str(), w, h);
     GetWindowRect(this->hWnd, &this->windowRect);
 
     this->device = CreateDevice(GetAdapter(false));
-    this->width = width;
-    this->height = height;
+    this->width = w;
+    this->height = h;
  
     ::ShowWindow(this->hWnd, SW_SHOW);
 }

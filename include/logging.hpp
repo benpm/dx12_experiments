@@ -22,46 +22,6 @@
 #include <processthreadsapi.h>
 #include <comdef.h>
 
-//Sets the name of the current thread
-inline void setCurThreadName(std::string name) {
-    // pthread only supports giving threads names with fewer than 16 characters
-    // including the null terminator so to make the behavior the same on different
-    // platforms the name is truncated to 15 characters
-    name.resize(15);
-    using convert_type = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_type, wchar_t> converter;
-    HRESULT r;
-    r = SetThreadDescription(GetCurrentThread(), converter.from_bytes(name.c_str()).c_str());
-}
-
-//Gets the name of the current thread
-inline std::string getCurThreadName() {
-    using convert_type = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_type, wchar_t> converter;
-    HRESULT r;
-    wchar_t name[32];
-    r = GetThreadDescription(GetCurrentThread(), (PWSTR*)name);
-    if (r != S_OK) {
-        _com_error err(r);
-        spdlog::warn("Failed to get thread name, error {:x} {}", r, std::string(err.ErrorMessage()));
-        return "";
-    }
-    return converter.to_bytes(name);
-}
-
-class tname_formatter_flag : public spdlog::custom_flag_formatter
-{
-public:
-    void format(const spdlog::details::log_msg &, const std::tm &, spdlog::memory_buf_t &dest) override {
-        std::string threadName = fmt::format("{:<15}", getCurThreadName());
-        dest.append(threadName.data(), threadName.data() + threadName.size());
-    }
-
-    std::unique_ptr<custom_flag_formatter> clone() const override {
-        return spdlog::details::make_unique<tname_formatter_flag>();
-    }
-};
-
 namespace spdlog::sinks {
     template<typename Mutex>
     class error_proxy_sink : public base_sink<Mutex> {

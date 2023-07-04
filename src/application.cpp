@@ -34,15 +34,14 @@ Application::Application()
 
     this->cmdQueue = CommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
-    this->swapChain = this->createSwapChain(hWnd, this->cmdQueue.queue,
-        this->clientWidth, this->clientHeight, this->nFrames);
+    this->swapChain = this->createSwapChain();
 
     this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
-    this->rtvHeap = this->createDescHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, this->nFrames);
+    this->rtvHeap = this->createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, this->nBuffers);
     this->rtvDescSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-    this->updateRenderTargetViews(device, this->swapChain, this->rtvHeap);
+    this->updateRenderTargetViews(this->rtvHeap);
 
     this->loadContent();
     this->flush();
@@ -135,9 +134,7 @@ void Application::resizeDepthBuffer(uint32_t width, uint32_t height)
 }
 
 // Create swap chain which describes the sequence of buffers used for rendering
-ComPtr<IDXGISwapChain4> Application::createSwapChain(HWND hWnd, 
-    ComPtr<ID3D12CommandQueue> commandQueue, 
-    uint32_t width, uint32_t height, uint32_t bufferCount )
+ComPtr<IDXGISwapChain4> Application::createSwapChain()
 {
     ComPtr<IDXGISwapChain4> dxgiSwapChain4;
     ComPtr<IDXGIFactory4> dxgiFactory4;
@@ -149,13 +146,13 @@ ComPtr<IDXGISwapChain4> Application::createSwapChain(HWND hWnd,
     chkDX(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory4)));
     
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-    swapChainDesc.Width = width;
-    swapChainDesc.Height = height;
+    swapChainDesc.Width = this->clientWidth;
+    swapChainDesc.Height = this->clientHeight;
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     swapChainDesc.Stereo = FALSE;
     swapChainDesc.SampleDesc = { 1, 0 };
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = bufferCount;
+    swapChainDesc.BufferCount = this->nBuffers;
     swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
@@ -163,8 +160,8 @@ ComPtr<IDXGISwapChain4> Application::createSwapChain(HWND hWnd,
     swapChainDesc.Flags = this->tearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
     ComPtr<IDXGISwapChain1> swapChain1;
     chkDX(dxgiFactory4->CreateSwapChainForHwnd(
-        commandQueue.Get(),
-        hWnd,
+        this->cmdQueue.queue.Get(),
+        this->hWnd,
         &swapChainDesc,
         nullptr,
         nullptr,
@@ -172,15 +169,14 @@ ComPtr<IDXGISwapChain4> Application::createSwapChain(HWND hWnd,
 
     // Disable the Alt+Enter fullscreen toggle feature. Switching to fullscreen
     // will be handled manually.
-    chkDX(dxgiFactory4->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
+    chkDX(dxgiFactory4->MakeWindowAssociation(this->hWnd, DXGI_MWA_NO_ALT_ENTER));
 
     chkDX(swapChain1.As(&dxgiSwapChain4));
     this->curBackBufIdx = dxgiSwapChain4->GetCurrentBackBufferIndex();
     return dxgiSwapChain4;
 }
 
-ComPtr<ID3D12DescriptorHeap> Application::createDescHeap(ComPtr<ID3D12Device2> device,
-    D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors)
+ComPtr<ID3D12DescriptorHeap> Application::createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors)
 {
     ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 
@@ -188,24 +184,23 @@ ComPtr<ID3D12DescriptorHeap> Application::createDescHeap(ComPtr<ID3D12Device2> d
     desc.NumDescriptors = numDescriptors;
     desc.Type = type;
 
-    chkDX(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
+    chkDX(this->device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
 
     return descriptorHeap;
 }
 
-void Application::updateRenderTargetViews(ComPtr<ID3D12Device2> device,
-    ComPtr<IDXGISwapChain4> swapChain, ComPtr<ID3D12DescriptorHeap> descriptorHeap)
+void Application::updateRenderTargetViews(ComPtr<ID3D12DescriptorHeap> descriptorHeap)
 {
-    UINT rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    UINT rtvDescriptorSize = this->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-    for (int i = 0; i < this->nFrames; ++i)
+    for (int i = 0; i < this->nBuffers; ++i)
     {
         ComPtr<ID3D12Resource> backBuffer;
-        chkDX(swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
+        chkDX(this->swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
 
-        device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
+        this->device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
 
         this->backBuffers[i] = backBuffer;
 
@@ -224,22 +219,24 @@ void Application::update()
     auto t1 = clock.now();
     auto deltaTime = t1 - t0;
     t0 = t1;
-    elapsedSeconds += deltaTime.count() * 1e-9;
+    const double dt = deltaTime.count() * 1e-9;
+    elapsedSeconds += dt;
 
     {
         // Update the model matrix
         float angle = static_cast<float>(elapsedSeconds) * XM_PIDIV4;
-        XMStoreFloat4x4(&this->matModel, XMMatrixRotationY(angle));
+        this->matModel = XMMatrixRotationY(angle);
 
         // Update the view matrix
         const XMVECTOR eyePosition = XMVectorSet(0.0f, 0.0f, -5.0f, 1.0f);
         const XMVECTOR focusPoint = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
         const XMVECTOR upDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-        XMStoreFloat4x4(&this->matView, XMMatrixLookAtLH(eyePosition, focusPoint, upDirection));
+        this->matView = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
 
         // Update the projection matrix
-        const float aspectRatio = this->clientWidth / this->clientHeight;
-        XMStoreFloat4x4(&this->matProj, XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.1f, 100.0f));
+        const float aspectRatio = static_cast<float>(this->clientWidth) / static_cast<float>(this->clientHeight);
+        this->matProj = XMMatrixPerspectiveFovLH(
+            XMConvertToRadians(this->fov), aspectRatio, 0.1f, 100.0f);
     }
 }
 
@@ -274,9 +271,7 @@ void Application::render()
         cmdList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
         // Update root params: MVP matrix into constant buffer for vert shader
-        XMMATRIX mvpMatrix = XMLoadFloat4x4(&this->matModel) *
-            XMLoadFloat4x4(&this->matView) *
-            XMLoadFloat4x4(&this->matProj);
+        const XMMATRIX mvpMatrix = this->matModel * this->matView * this->matProj;
         cmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
 
         // Draw
@@ -312,7 +307,7 @@ void Application::resize(uint32_t width, uint32_t height)
         // Flush the GPU queue to make sure the swap chain's back buffers
         //  are not being referenced by an in-flight command list.
         this->cmdQueue.flush();
-        for (int i = 0; i < this->nFrames; ++i) {
+        for (int i = 0; i < this->nBuffers; ++i) {
             // Any references to the back buffers must be released
             //  before the swap chain can be resized.
             this->backBuffers[i].Reset();
@@ -320,13 +315,13 @@ void Application::resize(uint32_t width, uint32_t height)
         }
         DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
         chkDX(this->swapChain->GetDesc(&swapChainDesc));
-        chkDX(this->swapChain->ResizeBuffers(this->nFrames, this->clientWidth, this->clientHeight,
+        chkDX(this->swapChain->ResizeBuffers(this->nBuffers, this->clientWidth, this->clientHeight,
             swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
         spdlog::debug("resized buffers in swap chain to ({},{})", this->clientWidth, this->clientHeight);
 
         this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
-        updateRenderTargetViews(this->device, this->swapChain, this->rtvHeap);
+        this->updateRenderTargetViews(this->rtvHeap);
 
         this->viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
             static_cast<float>(this->clientWidth), static_cast<float>(this->clientHeight));
@@ -336,10 +331,10 @@ void Application::resize(uint32_t width, uint32_t height)
     }
 }
 
-void Application::setFullscreen(bool fullscreen)
+void Application::setFullscreen(bool val)
 {
-    if (this->fullscreen != fullscreen) {
-        this->fullscreen = fullscreen;
+    if (this->fullscreen != val) {
+        this->fullscreen = val;
 
         if (this->fullscreen) {
             // Store the current window dimensions so they can be restored 

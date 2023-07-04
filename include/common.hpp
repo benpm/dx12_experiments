@@ -14,6 +14,8 @@
 #include <wrl.h>
 #include <shellapi.h>
 
+#include <logging.hpp>
+
 using namespace Microsoft::WRL;
 using namespace DirectX;
 

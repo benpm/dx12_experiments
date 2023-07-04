@@ -37,7 +37,7 @@ Application::Application()
     this->swapChain = this->createSwapChain(hWnd, this->cmdQueue.queue,
         this->clientWidth, this->clientHeight, this->nFrames);
 
-    this->currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
+    this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
     this->rtvHeap = this->createDescHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, this->nFrames);
     this->rtvDescSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -175,7 +175,7 @@ ComPtr<IDXGISwapChain4> Application::createSwapChain(HWND hWnd,
     chkDX(dxgiFactory4->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
 
     chkDX(swapChain1.As(&dxgiSwapChain4));
-    this->currentBackBufferIndex = dxgiSwapChain4->GetCurrentBackBufferIndex();
+    this->curBackBufIdx = dxgiSwapChain4->GetCurrentBackBufferIndex();
     return dxgiSwapChain4;
 }
 
@@ -245,7 +245,7 @@ void Application::update()
 
 void Application::render()
 {
-    auto backBuffer = this->backBuffers[this->currentBackBufferIndex];
+    auto backBuffer = this->backBuffers[this->curBackBufIdx];
     auto cmdList = this->cmdQueue.getCmdList();
 
     {
@@ -254,7 +254,7 @@ void Application::render()
             D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
         FLOAT clearColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
         CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(this->rtvHeap->GetCPUDescriptorHandleForHeapStart(),
-            this->currentBackBufferIndex, this->rtvDescSize);
+            this->curBackBufIdx, this->rtvDescSize);
         this->clearRTV(cmdList, rtv, clearColor);
         auto dsv = this->dsvHeap->GetCPUDescriptorHandleForHeapStart();
         this->clearDepth(cmdList, dsv);
@@ -289,17 +289,15 @@ void Application::render()
         this->transitionResource(cmdList, backBuffer,
             D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
-        uint64_t fenceVal = this->cmdQueue.execCmdList(cmdList);
+        // Execute command list and present, then wait for completion
+        this->frameFenceValues[this->curBackBufIdx] = this->cmdQueue.execCmdList(cmdList);
 
         UINT syncInterval = this->vsync ? 1 : 0;
         UINT presentFlags = this->tearingSupported && !this->vsync ? DXGI_PRESENT_ALLOW_TEARING : 0;
         chkDX(this->swapChain->Present(syncInterval, presentFlags));
+        this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
-        // Signal frame completion and wait
-        this->frameFenceValues[this->currentBackBufferIndex] = fenceVal;
-        this->currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
-
-        this->cmdQueue.waitForFenceVal(fenceVal);
+        this->cmdQueue.waitForFenceVal(this->frameFenceValues[this->curBackBufIdx]);
     }
 }
 
@@ -318,26 +316,23 @@ void Application::resize(uint32_t width, uint32_t height)
             // Any references to the back buffers must be released
             //  before the swap chain can be resized.
             this->backBuffers[i].Reset();
-            this->frameFenceValues[i] = this->frameFenceValues[this->currentBackBufferIndex];
-        }
-        for (int i = 0; i < this->nFrames; ++i) {
-            // Any references to the back buffers must be released
-            //  before the swap chain can be resized.
-            this->backBuffers[i].Reset();
-            this->frameFenceValues[i] = this->frameFenceValues[this->currentBackBufferIndex];
+            // this->frameFenceValues[i] = this->frameFenceValues[this->currentBackBufferIndex];
         }
         DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
         chkDX(this->swapChain->GetDesc(&swapChainDesc));
         chkDX(this->swapChain->ResizeBuffers(this->nFrames, this->clientWidth, this->clientHeight,
             swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
+        spdlog::debug("resized buffers in swap chain to ({},{})", this->clientWidth, this->clientHeight);
 
-        this->currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
+        this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
         updateRenderTargetViews(this->device, this->swapChain, this->rtvHeap);
 
         this->viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
             static_cast<float>(this->clientWidth), static_cast<float>(this->clientHeight));
         this->resizeDepthBuffer(this->clientWidth, this->clientHeight);
+
+        this->flush();
     }
 }
 

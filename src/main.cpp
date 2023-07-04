@@ -3,6 +3,8 @@
 _Use_decl_annotations_
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    setupLogging();
+
     Window::get()->initialize(hInstance, "D3D12 Experiment", 1280, 720);
     Application app;
  

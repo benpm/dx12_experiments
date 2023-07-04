@@ -7,7 +7,7 @@
 
 ## Dependencies
 ```
-vcpkg install directxtk12
+vcpkg install directxtk12 spdlog
 ```
 
 ## Building

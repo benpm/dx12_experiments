@@ -27,7 +27,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 int width = clientRect.right - clientRect.left;
                 int height = clientRect.bottom - clientRect.top;
-
+                spdlog::debug("WM_SIZE {} {}", width, height);
                 app->resize(width, height);
             } break;
             case WM_DESTROY:

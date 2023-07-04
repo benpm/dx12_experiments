@@ -71,7 +71,7 @@ uint64_t CommandQueue::signal()
 
 bool CommandQueue::isFenceComplete(uint64_t fenceValue)
 {
-    return (this->fence->GetCompletedValue() < fenceValue);
+    return (this->fence->GetCompletedValue() >= fenceValue);
 }
 
 void CommandQueue::waitForFenceVal(uint64_t fenceValue)

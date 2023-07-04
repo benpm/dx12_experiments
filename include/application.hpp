@@ -33,7 +33,7 @@ public:
     // Render target view descriptor heap
     ComPtr<ID3D12DescriptorHeap> rtvHeap;
     UINT rtvDescSize;
-    UINT currentBackBufferIndex;
+    UINT curBackBufIdx;
 
     ComPtr<ID3D12Resource> vertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView;

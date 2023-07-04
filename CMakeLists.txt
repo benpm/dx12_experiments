@@ -3,6 +3,7 @@ project(dx12_experiments)
 
 find_package(directxtk12 CONFIG REQUIRED)
 find_package(directxmath CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 add_executable(main
@@ -10,6 +11,7 @@ add_executable(main
     "src/application.cpp"
     "src/command_queue.cpp"
     "src/window.cpp"
+    "src/logging.cpp"
     
     "src/vertex_shader.hlsl"
     "src/pixel_shader.hlsl"
@@ -40,4 +42,5 @@ target_link_libraries(main
     ole32.lib oleaut32.lib
     runtimeobject.lib
     Microsoft::DirectXTK12
+    spdlog::spdlog
 )

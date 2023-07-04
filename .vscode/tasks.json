@@ -15,6 +15,9 @@
 			"problemMatcher": [
 				"$msCompile"
 			],
+			"presentation": {
+				"clear": true
+			},
 			"detail": "CMake template build task"
 		}
 	]

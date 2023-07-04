@@ -14,7 +14,8 @@
 #include <wrl.h>
 #include <shellapi.h>
 
-using Microsoft::WRL::ComPtr;
+using namespace Microsoft::WRL;
+using namespace DirectX;
 
 inline void chkDX(HRESULT hr)
 {

@@ -1,34 +1,21 @@
+#include <iostream>
 #include <window.hpp>
-
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     Application* app = Window::get()->app;
-    if (app != nullptr && app->isInitialized) {
+    if (app != nullptr && app->isInitialized && app->contentLoaded) {
         switch (message) {
             case WM_PAINT:
                 app->update();
                 app->render();
                 break;
             case WM_SYSKEYDOWN:
-            case WM_KEYDOWN: {
-                bool alt = (::GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
-
-                switch (wParam) {
-                    case 'V':
-                        app->vsync = !app->vsync;
-                        break;
-                    case VK_ESCAPE:
-                        ::PostQuitMessage(0);
-                        break;
-                    case VK_RETURN:
-                        if (alt) {
-                            case VK_F11:
-                            app->setFullscreen(!app->fullscreen);
-                        }
-                        break;
-                }
-            } break;
+            case WM_KEYDOWN:
+                app->onKeyPressed(
+                    static_cast<UINT>(wParam),
+                    (::GetAsyncKeyState(VK_MENU) & 0x8000) != 0);
+                break;
             // The default window procedure will play a system notification sound
             // when pressing the Alt+Enter keyboard combination if this message is
             // not handled.
@@ -87,6 +74,7 @@ void EnableDebugLayer()
     ComPtr<ID3D12Debug> debugInterface;
     chkDX(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
     debugInterface->EnableDebugLayer();
+    std::cout << "Direct3D Debug Layer activated" << std::endl;
 #endif
 }
 
@@ -243,6 +231,8 @@ void Window::registerApp(Application* app)
     app->hWnd = this->hWnd;
     app->device = this->device;
     app->tearingSupported = this->tearingSupported;
+    app->clientWidth = this->width;
+    app->clientHeight = this->height;
 }
 
 void Window::initialize(HINSTANCE hInstance, const std::string &title, uint32_t width, uint32_t height)
@@ -260,6 +250,8 @@ void Window::initialize(HINSTANCE hInstance, const std::string &title, uint32_t 
     GetWindowRect(this->hWnd, &this->windowRect);
 
     this->device = CreateDevice(GetAdapter(false));
+    this->width = width;
+    this->height = height;
  
     ::ShowWindow(this->hWnd, SW_SHOW);
 }

@@ -1,7 +1,9 @@
 # DirectX 12 Experiments
 
+![banner img](banner.png)
+
 ## Credit
-Lots of stuff taken from Microsoft's DX12 tutorials
+- [3dgep.com](https://www.3dgep.com/learning-directx-12-1/) tutorials
 
 ## Dependencies
 ```

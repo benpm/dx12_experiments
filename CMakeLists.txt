@@ -10,6 +10,9 @@ add_executable(main
     "src/application.cpp"
     "src/command_queue.cpp"
     "src/window.cpp"
+    
+    "src/vertex_shader.hlsl"
+    "src/pixel_shader.hlsl"
 )
 target_link_options(main PRIVATE /SUBSYSTEM:WINDOWS)
 target_compile_definitions(main PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
@@ -19,7 +22,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(main PRIVATE _DEBUG)
 endif()
 
-# set_source_files_properties(src/shaders.hlsl PROPERTIES VS_SHADER_MODEL 5.0 VS_SHADER_FLAGS "-T vs_5_0" VS_SHADER_ENTRYPOINT "VSMain")
+set_source_files_properties("src/vertex_shader.hlsl" PROPERTIES
+    VS_SHADER_MODEL 5.1
+    VS_SHADER_TYPE Vertex
+    VS_SHADER_ENTRYPOINT "main")
+
+set_source_files_properties("src/pixel_shader.hlsl" PROPERTIES
+    VS_SHADER_MODEL 5.1
+    VS_SHADER_TYPE Pixel
+    VS_SHADER_ENTRYPOINT "main")
 
 target_link_libraries(main  
     d3d12.lib dxgi.lib dxguid.lib uuid.lib

@@ -10,6 +10,7 @@ public:
     RECT windowRect;
     bool tearingSupported;
     Application* app = nullptr;
+    uint32_t width, height;
 
     void registerApp(Application* app);
     void initialize(HINSTANCE hInstance, const std::string& title, uint32_t width, uint32_t height);

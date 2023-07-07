@@ -312,11 +312,11 @@ void Application::render() {
     }
 }
 
-void Application::resize(uint32_t width, uint32_t height) {
-    if (this->clientWidth != width || this->clientHeight != height) {
+template <> void Application::handleEvent(const EventResize& e) {
+    if (this->clientWidth != e.width || this->clientHeight != e.height) {
         // Don't allow 0 size swap chain back buffers.
-        this->clientWidth = std::max(1u, width);
-        this->clientHeight = std::max(1u, height);
+        this->clientWidth = std::max(1u, e.width);
+        this->clientHeight = std::max(1u, e.height);
 
         // Flush the GPU queue to make sure the swap chain's back buffers
         //  are not being referenced by an in-flight command list.
@@ -399,21 +399,37 @@ void Application::flush() {
     this->cmdQueue.flush();
 }
 
-void Application::onKeyPressed(UINT key, bool alt) {
-    switch (key) {
-        case 'V':
-            this->vsync = !this->vsync;
-            break;
-        case VK_ESCAPE:
+template <> void Application::handleEvent(const EventKeyDown& e) {
+    this->pressedKeys.insert(e.key);
+    switch (e.key) {
+        case Key::Escape:
             ::PostQuitMessage(0);
             break;
-        case VK_RETURN:
-            if (alt) {
-                case VK_F11:
-                    this->setFullscreen(!this->fullscreen);
-            }
+        case Key::F11:
+            this->setFullscreen(!this->fullscreen);
             break;
     }
+}
+
+template <> void Application::handleEvent(const EventKeyUp& e) {
+    this->pressedKeys.erase(e.key);
+}
+
+template <> void Application::handleEvent(const EventMouseMove& e) {
+    spdlog::debug("EventMouseMove x={},y={}", e.x, e.y);
+}
+
+template <> void Application::handleEvent(const EventMouseButtonDown&) {
+    spdlog::debug("EventMouseDown");
+}
+
+template <> void Application::handleEvent(const EventMouseButtonUp&) {
+    spdlog::debug("EventMouseUp");
+}
+
+template <> void Application::handleEvent(const EventPaint&) {
+    this->update();
+    this->render();
 }
 
 bool Application::loadContent() {

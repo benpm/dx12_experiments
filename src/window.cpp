@@ -1,3 +1,5 @@
+#include <windowsx.h>
+#include <input.hpp>
 #include <iostream>
 #include <window.hpp>
 
@@ -9,13 +11,15 @@ LRESULT CALLBACK WndProc(HWND hwnd,
     if (app != nullptr && app->isInitialized && app->contentLoaded) {
         switch (message) {
             case WM_PAINT:
-                app->update();
-                app->render();
+                app->handleEvent(EventPaint{});
                 break;
             case WM_SYSKEYDOWN:
             case WM_KEYDOWN:
-                app->onKeyPressed(static_cast<UINT>(wParam),
-                    (::GetAsyncKeyState(VK_MENU) & 0x8000) != 0);
+                app->handleEvent(EventKeyDown{.key = static_cast<Key>(wParam)});
+                break;
+            case WM_SYSKEYUP:
+            case WM_KEYUP:
+                app->handleEvent(EventKeyUp{.key = static_cast<Key>(wParam)});
                 break;
             // The default window procedure will play a system notification
             // sound when pressing the Alt+Enter keyboard combination if this
@@ -25,12 +29,20 @@ LRESULT CALLBACK WndProc(HWND hwnd,
             case WM_SIZE: {
                 RECT clientRect = {};
                 ::GetClientRect(app->hWnd, &clientRect);
-                app->resize(clientRect.right - clientRect.left,
-                    clientRect.bottom - clientRect.top);
+                app->handleEvent(
+                    EventResize{.width = static_cast<uint32_t>(
+                                    clientRect.right - clientRect.left),
+                        .height = static_cast<uint32_t>(
+                            clientRect.bottom - clientRect.top)});
             } break;
             case WM_DESTROY:
                 ::PostQuitMessage(0);
                 break;
+            case WM_MOUSEMOVE: {
+                int xPos = GET_X_LPARAM(lParam);
+                int yPos = GET_Y_LPARAM(lParam);
+                app->handleEvent(EventMouseMove{.x = xPos, .y = yPos});
+            } break;
             default:
                 return ::DefWindowProcW(hwnd, message, wParam, lParam);
         }

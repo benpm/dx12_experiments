@@ -1,6 +1,8 @@
 #pragma once
 
 #include <command_queue.hpp>
+#include <input.hpp>
+#include <unordered_set>
 
 struct VertexPosColor {
     XMFLOAT3 position;
@@ -22,6 +24,8 @@ class Application {
     HWND hWnd;
     // Window rectangle (used to toggle fullscreen state)
     RECT windowRect;
+    // Currently pressed keys
+    std::unordered_set<Key> pressedKeys;
 
     // DirectX 12 Objects
     ComPtr<ID3D12Device2> device;
@@ -96,9 +100,16 @@ class Application {
     void update();
     // Clear the render target and present the backbuffer
     void render();
-    void resize(uint32_t width, uint32_t height);
     void setFullscreen(bool val);
     void flush();
-    void onKeyPressed(UINT key, bool alt);
     bool loadContent();
+    template <typename T> void handleEvent(const T& e){};
 };
+
+template <> void Application::handleEvent(const EventKeyDown& e);
+template <> void Application::handleEvent(const EventKeyUp& e);
+template <> void Application::handleEvent(const EventResize& e);
+template <> void Application::handleEvent(const EventMouseMove& e);
+template <> void Application::handleEvent(const EventMouseButtonDown& e);
+template <> void Application::handleEvent(const EventMouseButtonUp& e);
+template <> void Application::handleEvent(const EventPaint& e);

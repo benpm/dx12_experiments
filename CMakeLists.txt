@@ -5,14 +5,14 @@ find_package(directxtk12 CONFIG REQUIRED)
 find_package(directxmath CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 add_executable(main
     "src/main.cpp"
     "src/application.cpp"
     "src/command_queue.cpp"
     "src/window.cpp"
     "src/logging.cpp"
-    
+
     "src/vertex_shader.hlsl"
     "src/pixel_shader.hlsl"
 )
@@ -37,7 +37,7 @@ set_source_files_properties("src/pixel_shader.hlsl" PROPERTIES
     VS_SHADER_TYPE Pixel
     VS_SHADER_ENTRYPOINT "main")
 
-target_link_libraries(main  
+target_link_libraries(main
     d3d12.lib dxgi.lib dxguid.lib uuid.lib
     d3dcompiler.lib
     kernel32.lib user32.lib

@@ -12,6 +12,7 @@ add_executable(main
     "src/command_queue.cpp"
     "src/window.cpp"
     "src/logging.cpp"
+    "src/camera.cpp"
 
     "src/vertex_shader.hlsl"
     "src/pixel_shader.hlsl"

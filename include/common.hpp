@@ -25,6 +25,9 @@ inline void chkDX(HRESULT hr) {
     }
 }
 
+constexpr float pi = XM_PI;
+constexpr float tau = XM_2PI;
+
 template <int D> struct vec {
     XMVECTOR data = XMVectorZero();
 
@@ -56,6 +59,7 @@ template <int D> struct vec {
 
 struct vec2 : public vec<2> {
     vec2() = default;
+    vec2(const XMVECTOR& data) : vec<2>(data) {}
     vec2(float x, float y) : vec<2>(XMVectorSet(x, y, 0.0f, 0.0f)) {}
 
     inline float x() const { return XMVectorGetX(data); }
@@ -68,6 +72,7 @@ struct vec2 : public vec<2> {
 
 struct vec3 : public vec<3> {
     vec3() = default;
+    vec3(const XMVECTOR& data) : vec<3>(data) {}
     vec3(float x, float y, float z = 0.0f)
         : vec<3>(XMVectorSet(x, y, z, 0.0f)) {}
 
@@ -82,6 +87,7 @@ struct vec3 : public vec<3> {
 
 struct vec4 : public vec<4> {
     vec4() = default;
+    vec4(const XMVECTOR& data) : vec<4>(data) {}
     vec4(float x, float y, float z = 0.0f, float w = 0.0f)
         : vec<4>(XMVectorSet(x, y, z, w)) {}
 
@@ -94,3 +100,34 @@ struct vec4 : public vec<4> {
         return static_cast<vec4&>(vec<4>::operator=(other));
     }
 };
+
+struct mat4 {
+    XMMATRIX data = XMMatrixIdentity();
+
+    mat4() = default;
+    mat4(const XMMATRIX& data) : data(data) {}
+
+    mat4 operator*(const mat4& other) const {
+        return {XMMatrixMultiply(data, other.data)};
+    }
+    mat4& operator*=(const mat4& other) {
+        data = XMMatrixMultiply(data, other.data);
+        return *this;
+    }
+
+    mat4& operator=(const XMMATRIX& other) {
+        data = other;
+        return *this;
+    }
+
+    operator XMMATRIX() const { return data; }
+};
+
+// Vector-matrix multiply
+inline vec4 operator*(const vec4& v, const mat4& m) {
+    return {XMVector4Transform(v, m)};
+}
+
+inline float operator""_deg(long double degrees) {
+    return static_cast<float>(degrees) * pi / 180.0f;
+}

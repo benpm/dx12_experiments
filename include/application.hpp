@@ -1,5 +1,6 @@
 #pragma once
 
+#include <camera.hpp>
 #include <command_queue.hpp>
 #include <input.hpp>
 #include <unordered_set>
@@ -56,9 +57,8 @@ class Application {
     // Masks out a region of the screen for rendering
     D3D12_RECT scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
     float fov = 45.0f;
-    XMMATRIX matModel;
-    XMMATRIX matView;
-    XMMATRIX matProj;
+    mat4 matModel;
+    OrbitCamera cam;
     bool contentLoaded = false;
 
     // Synchronization objects

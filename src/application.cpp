@@ -230,25 +230,19 @@ void Application::update() {
     t0 = t1;
     const double dt = deltaTime.count() * 1e-9;
     elapsedSeconds += dt;
+    const float t = static_cast<float>(elapsedSeconds);
 
     {
-        // Update the model matrix
         this->matModel = XMMatrixIdentity();
 
-        // Update the view matrix
-        vec4 eyePosition(0.0f, 0.0f, -5.0f, 1.0f);
-        vec4 focusPoint(0.0f, 0.0f, 0.0f, 1.0f);
-        vec4 upDirection(0.0f, 1.0f, 0.0f, 0.0f);
-        eyePosition = XMVector3TransformCoord(
-            eyePosition, XMMatrixRotationY(this->mousePos.x() / 100.0f) *
-                             XMMatrixRotationX(this->mousePos.y() / 100.0f));
-        this->matView = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
-
-        // Update the projection matrix
-        const float aspectRatio = static_cast<float>(this->clientWidth) /
-                                  static_cast<float>(this->clientHeight);
-        this->matProj = XMMatrixPerspectiveFovLH(
-            XMConvertToRadians(this->fov), aspectRatio, 0.1f, 100.0f);
+        this->cam.pitch =
+            (this->mousePos.y() / static_cast<float>(this->clientWidth)) * pi -
+            (pi / 2.0f);
+        this->cam.yaw =
+            (this->mousePos.x() / static_cast<float>(this->clientWidth)) * tau;
+        this->cam.radius = 10.0f;
+        this->cam.aspectRatio = static_cast<float>(this->clientWidth) /
+                                static_cast<float>(this->clientHeight);
     }
 }
 
@@ -284,7 +278,7 @@ void Application::render() {
 
         // Update root params: MVP matrix into constant buffer for vert shader
         const XMMATRIX mvpMatrix =
-            this->matModel * this->matView * this->matProj;
+            this->matModel * this->cam.view() * this->cam.proj();
         cmdList->SetGraphicsRoot32BitConstants(
             0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
 

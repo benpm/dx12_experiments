@@ -21,7 +21,7 @@ target_compile_definitions(main PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
 # Enable all warnings
-target_compile_options(main PRIVATE /W4 /WX)
+target_compile_options(main PRIVATE /W3)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(main PRIVATE _DEBUG)

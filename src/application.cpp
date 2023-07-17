@@ -233,13 +233,15 @@ void Application::update() {
 
     {
         // Update the model matrix
-        float angle = static_cast<float>(elapsedSeconds) * XM_PIDIV4;
-        this->matModel = XMMatrixRotationY(angle);
+        this->matModel = XMMatrixIdentity();
 
         // Update the view matrix
-        const XMVECTOR eyePosition = XMVectorSet(0.0f, 0.0f, -5.0f, 1.0f);
-        const XMVECTOR focusPoint = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-        const XMVECTOR upDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        vec4 eyePosition(0.0f, 0.0f, -5.0f, 1.0f);
+        vec4 focusPoint(0.0f, 0.0f, 0.0f, 1.0f);
+        vec4 upDirection(0.0f, 1.0f, 0.0f, 0.0f);
+        eyePosition = XMVector3TransformCoord(
+            eyePosition, XMMatrixRotationY(this->mousePos.x() / 100.0f) *
+                             XMMatrixRotationX(this->mousePos.y() / 100.0f));
         this->matView = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
 
         // Update the projection matrix
@@ -416,15 +418,17 @@ template <> void Application::handleEvent(const EventKeyUp& e) {
 }
 
 template <> void Application::handleEvent(const EventMouseMove& e) {
-    spdlog::debug("EventMouseMove x={},y={}", e.x, e.y);
+    const vec2 v(static_cast<float>(e.x), static_cast<float>(e.y));
+    this->mouseDelta = v - this->mousePos;
+    this->mousePos = v;
 }
 
-template <> void Application::handleEvent(const EventMouseButtonDown&) {
-    spdlog::debug("EventMouseDown");
+template <> void Application::handleEvent(const EventMouseButtonDown& e) {
+    this->pressedMouseButtons.insert(e.button);
 }
 
-template <> void Application::handleEvent(const EventMouseButtonUp&) {
-    spdlog::debug("EventMouseUp");
+template <> void Application::handleEvent(const EventMouseButtonUp& e) {
+    this->pressedMouseButtons.erase(e.button);
 }
 
 template <> void Application::handleEvent(const EventPaint&) {

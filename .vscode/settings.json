@@ -64,7 +64,8 @@
         "xlocmes": "cpp",
         "xlocmon": "cpp",
         "xlocnum": "cpp",
-        "xloctime": "cpp"
+        "xloctime": "cpp",
+        "xhash": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

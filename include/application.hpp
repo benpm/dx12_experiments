@@ -26,6 +26,12 @@ class Application {
     RECT windowRect;
     // Currently pressed keys
     std::unordered_set<Key> pressedKeys;
+    // Currently pressed mouse buttons
+    std::unordered_set<MouseButton> pressedMouseButtons;
+    // Mouse position
+    vec2 mousePos;
+    // Mouse delta position
+    vec2 mouseDelta;
 
     // DirectX 12 Objects
     ComPtr<ID3D12Device2> device;

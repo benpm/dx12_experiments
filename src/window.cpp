@@ -13,14 +13,6 @@ LRESULT CALLBACK WndProc(HWND hwnd,
             case WM_PAINT:
                 app->handleEvent(EventPaint{});
                 break;
-            case WM_SYSKEYDOWN:
-            case WM_KEYDOWN:
-                app->handleEvent(EventKeyDown{.key = static_cast<Key>(wParam)});
-                break;
-            case WM_SYSKEYUP:
-            case WM_KEYUP:
-                app->handleEvent(EventKeyUp{.key = static_cast<Key>(wParam)});
-                break;
             // The default window procedure will play a system notification
             // sound when pressing the Alt+Enter keyboard combination if this
             // message is not handled.
@@ -38,11 +30,6 @@ LRESULT CALLBACK WndProc(HWND hwnd,
             case WM_DESTROY:
                 ::PostQuitMessage(0);
                 break;
-            case WM_MOUSEMOVE: {
-                int xPos = GET_X_LPARAM(lParam);
-                int yPos = GET_Y_LPARAM(lParam);
-                app->handleEvent(EventMouseMove{.x = xPos, .y = yPos});
-            } break;
             default:
                 return ::DefWindowProcW(hwnd, message, wParam, lParam);
         }

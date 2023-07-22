@@ -20,7 +20,7 @@ constexpr WORD cubeIndices[36] = {
     4, 0, 3, 4, 3, 7   // -y
 };
 
-Application::Application() {
+Application::Application() : inputMap(inputManager) {
     Window::get()->registerApp(this);
 
     if (!XMVerifyCPUSupport()) {
@@ -32,6 +32,8 @@ Application::Application() {
     this->viewport =
         CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(this->clientWidth),
             static_cast<float>(this->clientHeight));
+
+    this->inputManager.SetDisplaySize(this->clientWidth, this->clientHeight);
 
     this->cmdQueue = CommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
@@ -45,6 +47,50 @@ Application::Application() {
         D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
     this->updateRenderTargetViews(this->rtvHeap);
+
+    // Input mapping using gainput
+    this->keyboardID =
+        this->inputManager.CreateDevice<gainput::InputDeviceKeyboard>();
+    this->mouseID =
+        this->inputManager.CreateDevice<gainput::InputDeviceMouse>();
+    this->rawMouseID =
+        this->inputManager.CreateDevice<gainput::InputDeviceMouse>(
+            gainput::InputDevice::AutoIndex, gainput::InputDevice::DV_RAW);
+
+    this->inputMap.MapBool(
+        static_cast<gainput::UserButtonId>(Button::MoveForward),
+        this->keyboardID, gainput::KeyW);
+    this->inputMap.MapBool(
+        static_cast<gainput::UserButtonId>(Button::MoveForward),
+        this->keyboardID, gainput::KeyUp);
+    this->inputMap.MapBool(
+        static_cast<gainput::UserButtonId>(Button::MoveBackward),
+        this->keyboardID, gainput::KeyS);
+    this->inputMap.MapBool(
+        static_cast<gainput::UserButtonId>(Button::MoveBackward),
+        this->keyboardID, gainput::KeyDown);
+    this->inputMap.MapBool(static_cast<gainput::UserButtonId>(Button::MoveLeft),
+        this->keyboardID, gainput::KeyA);
+    this->inputMap.MapBool(static_cast<gainput::UserButtonId>(Button::MoveLeft),
+        this->keyboardID, gainput::KeyLeft);
+    this->inputMap.MapBool(
+        static_cast<gainput::UserButtonId>(Button::MoveRight), this->keyboardID,
+        gainput::KeyD);
+    this->inputMap.MapBool(
+        static_cast<gainput::UserButtonId>(Button::MoveRight), this->keyboardID,
+        gainput::KeyRight);
+    this->inputMap.MapBool(static_cast<gainput::UserButtonId>(Button::Interact),
+        this->mouseID, gainput::MouseButtonLeft);
+    this->inputMap.MapFloat(static_cast<gainput::UserButtonId>(Button::AxisX),
+        this->mouseID, gainput::MouseAxisX);
+    this->inputMap.MapFloat(static_cast<gainput::UserButtonId>(Button::AxisY),
+        this->mouseID, gainput::MouseAxisY);
+    this->inputMap.MapFloat(
+        static_cast<gainput::UserButtonId>(Button::AxisDeltaX),
+        this->rawMouseID, gainput::MouseAxisX);
+    this->inputMap.MapFloat(
+        static_cast<gainput::UserButtonId>(Button::AxisDeltaY),
+        this->rawMouseID, gainput::MouseAxisY);
 
     this->loadContent();
     this->flush();
@@ -232,14 +278,26 @@ void Application::update() {
     elapsedSeconds += dt;
     const float t = static_cast<float>(elapsedSeconds);
 
+    this->inputManager.Update();
+    this->mouseDelta = {
+        this->inputMap.GetFloatDelta(
+            static_cast<gainput::UserButtonId>(Button::AxisDeltaX)),
+        this->inputMap.GetFloatDelta(
+            static_cast<gainput::UserButtonId>(Button::AxisDeltaY))};
+    this->mousePos = {this->inputMap.GetFloat(
+                          static_cast<gainput::UserButtonId>(Button::AxisX)),
+        this->inputMap.GetFloat(
+            static_cast<gainput::UserButtonId>(Button::AxisY))};
     {
         this->matModel = XMMatrixIdentity();
 
-        this->cam.pitch =
-            (this->mousePos.y() / static_cast<float>(this->clientWidth)) * pi -
+        this->cam.pitch +=
+            (this->mouseDelta.y() / static_cast<float>(this->clientWidth)) *
+                pi -
             (pi / 2.0f);
-        this->cam.yaw =
-            (this->mousePos.x() / static_cast<float>(this->clientWidth)) * tau;
+        this->cam.yaw +=
+            (this->mouseDelta.x() / static_cast<float>(this->clientWidth)) *
+            tau;
         this->cam.radius = 10.0f;
         this->cam.aspectRatio = static_cast<float>(this->clientWidth) /
                                 static_cast<float>(this->clientHeight);
@@ -313,6 +371,9 @@ template <> void Application::handleEvent(const EventResize& e) {
         // Don't allow 0 size swap chain back buffers.
         this->clientWidth = std::max(1u, e.width);
         this->clientHeight = std::max(1u, e.height);
+
+        this->inputManager.SetDisplaySize(
+            this->clientWidth, this->clientHeight);
 
         // Flush the GPU queue to make sure the swap chain's back buffers
         //  are not being referenced by an in-flight command list.

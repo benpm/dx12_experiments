@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gainput/gainput.h>
 #include <common.hpp>
 
 enum class Key : UINT {
@@ -116,6 +117,17 @@ enum class Key : UINT {
     ScrollLock = VK_SCROLL
 };
 enum class MouseButton { Left, Right, Middle, XButton1, XButton2 };
+enum class Button : gainput::UserButtonId {
+    MoveForward,
+    MoveBackward,
+    MoveLeft,
+    MoveRight,
+    Interact,
+    AxisX,
+    AxisY,
+    AxisDeltaX,
+    AxisDeltaY,
+};
 
 struct EventPaint {};
 struct EventKeyDown {

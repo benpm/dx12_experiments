@@ -21,6 +21,8 @@ target_link_options(main PRIVATE /SUBSYSTEM:WINDOWS)
 target_compile_definitions(main PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
+add_subdirectory(lib/gainput)
+
 # Enable all warnings
 target_compile_options(main PRIVATE /W3)
 
@@ -47,4 +49,5 @@ target_link_libraries(main
     runtimeobject.lib
     Microsoft::DirectXTK12
     spdlog::spdlog
+    gainput
 )

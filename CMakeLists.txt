@@ -41,6 +41,7 @@ set_source_files_properties("src/pixel_shader.hlsl" PROPERTIES
     VS_SHADER_ENTRYPOINT "main")
 
 target_link_libraries(main
+    PUBLIC
     d3d12.lib dxgi.lib dxguid.lib uuid.lib
     d3dcompiler.lib
     kernel32.lib user32.lib

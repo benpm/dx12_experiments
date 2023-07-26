@@ -21,11 +21,13 @@ LRESULT CALLBACK WndProc(HWND hwnd,
             case WM_SIZE: {
                 RECT clientRect = {};
                 ::GetClientRect(app->hWnd, &clientRect);
-                app->handleEvent(
-                    EventResize{.width = static_cast<uint32_t>(
-                                    clientRect.right - clientRect.left),
-                        .height = static_cast<uint32_t>(
-                            clientRect.bottom - clientRect.top)});
+                EventResize event = {.width = static_cast<uint32_t>(
+                                         clientRect.right - clientRect.left),
+                    .height = static_cast<uint32_t>(
+                        clientRect.bottom - clientRect.top)};
+                Window::get()->inputManager->SetDisplaySize(
+                    event.width, event.height);
+                app->handleEvent(event);
             } break;
             case WM_DESTROY:
                 ::PostQuitMessage(0);
@@ -162,23 +164,9 @@ ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter) {
 
         // Suppress individual messages by their ID
         D3D12_MESSAGE_ID DenyIds[] = {
-            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,  // I'm
-                                                                           // really
-                                                                           // not
-                                                                           // sure
-                                                                           // how
-                                                                           // to
-                                                                           // avoid
-                                                                           // this
-                                                                           // message.
-            D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,  // This warning occurs when
-                                                     // using capture frame
-                                                     // while graphics
-                                                     // debugging.
-            D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,  // This warning occurs
-                                                       // when using capture
-                                                       // frame while graphics
-                                                       // debugging.
+            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+            D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+            D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
         };
 
         D3D12_INFO_QUEUE_FILTER NewFilter = {};
@@ -250,4 +238,18 @@ void Window::initialize(HINSTANCE hInstance,
     this->height = h;
 
     ::ShowWindow(this->hWnd, SW_SHOW);
+    ::UpdateWindow(this->hWnd);
+
+    // Set up input devices
+    this->inputManager = std::make_unique<gainput::InputManager>();
+    this->inputManager->SetDisplaySize(w, h);
+    this->keyboardID =
+        this->inputManager->CreateDevice<gainput::InputDeviceKeyboard>();
+    this->mouseID =
+        this->inputManager->CreateDevice<gainput::InputDeviceMouse>();
+    this->rawMouseID =
+        this->inputManager->CreateDevice<gainput::InputDeviceMouse>(
+            gainput::InputDevice::AutoIndex, gainput::InputDevice::DV_RAW);
+    this->inputMap =
+        std::make_unique<gainput::InputMap>(*this->inputManager, "input_map");
 }

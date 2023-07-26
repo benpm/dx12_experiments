@@ -20,7 +20,7 @@ constexpr WORD cubeIndices[36] = {
     4, 0, 3, 4, 3, 7   // -y
 };
 
-Application::Application() : inputMap(inputManager) {
+Application::Application() {
     Window::get()->registerApp(this);
 
     if (!XMVerifyCPUSupport()) {
@@ -32,8 +32,6 @@ Application::Application() : inputMap(inputManager) {
     this->viewport =
         CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(this->clientWidth),
             static_cast<float>(this->clientHeight));
-
-    this->inputManager.SetDisplaySize(this->clientWidth, this->clientHeight);
 
     this->cmdQueue = CommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
@@ -48,49 +46,32 @@ Application::Application() : inputMap(inputManager) {
 
     this->updateRenderTargetViews(this->rtvHeap);
 
-    // Input mapping using gainput
-    this->keyboardID =
-        this->inputManager.CreateDevice<gainput::InputDeviceKeyboard>();
-    this->mouseID =
-        this->inputManager.CreateDevice<gainput::InputDeviceMouse>();
-    this->rawMouseID =
-        this->inputManager.CreateDevice<gainput::InputDeviceMouse>(
-            gainput::InputDevice::AutoIndex, gainput::InputDevice::DV_RAW);
-
-    this->inputMap.MapBool(
-        static_cast<gainput::UserButtonId>(Button::MoveForward),
-        this->keyboardID, gainput::KeyW);
-    this->inputMap.MapBool(
-        static_cast<gainput::UserButtonId>(Button::MoveForward),
-        this->keyboardID, gainput::KeyUp);
-    this->inputMap.MapBool(
-        static_cast<gainput::UserButtonId>(Button::MoveBackward),
-        this->keyboardID, gainput::KeyS);
-    this->inputMap.MapBool(
-        static_cast<gainput::UserButtonId>(Button::MoveBackward),
-        this->keyboardID, gainput::KeyDown);
-    this->inputMap.MapBool(static_cast<gainput::UserButtonId>(Button::MoveLeft),
-        this->keyboardID, gainput::KeyA);
-    this->inputMap.MapBool(static_cast<gainput::UserButtonId>(Button::MoveLeft),
-        this->keyboardID, gainput::KeyLeft);
-    this->inputMap.MapBool(
-        static_cast<gainput::UserButtonId>(Button::MoveRight), this->keyboardID,
-        gainput::KeyD);
-    this->inputMap.MapBool(
-        static_cast<gainput::UserButtonId>(Button::MoveRight), this->keyboardID,
-        gainput::KeyRight);
-    this->inputMap.MapBool(static_cast<gainput::UserButtonId>(Button::Interact),
-        this->mouseID, gainput::MouseButtonLeft);
-    this->inputMap.MapFloat(static_cast<gainput::UserButtonId>(Button::AxisX),
-        this->mouseID, gainput::MouseAxisX);
-    this->inputMap.MapFloat(static_cast<gainput::UserButtonId>(Button::AxisY),
-        this->mouseID, gainput::MouseAxisY);
-    this->inputMap.MapFloat(
-        static_cast<gainput::UserButtonId>(Button::AxisDeltaX),
-        this->rawMouseID, gainput::MouseAxisX);
-    this->inputMap.MapFloat(
-        static_cast<gainput::UserButtonId>(Button::AxisDeltaY),
-        this->rawMouseID, gainput::MouseAxisY);
+    Window::get()->inputMap->MapBool(
+        Button::MoveForward, Window::get()->keyboardID, gainput::KeyW);
+    Window::get()->inputMap->MapBool(
+        Button::MoveForward, Window::get()->keyboardID, gainput::KeyUp);
+    Window::get()->inputMap->MapBool(
+        Button::MoveBackward, Window::get()->keyboardID, gainput::KeyS);
+    Window::get()->inputMap->MapBool(
+        Button::MoveBackward, Window::get()->keyboardID, gainput::KeyDown);
+    Window::get()->inputMap->MapBool(
+        Button::MoveLeft, Window::get()->keyboardID, gainput::KeyA);
+    Window::get()->inputMap->MapBool(
+        Button::MoveLeft, Window::get()->keyboardID, gainput::KeyLeft);
+    Window::get()->inputMap->MapBool(
+        Button::MoveRight, Window::get()->keyboardID, gainput::KeyD);
+    Window::get()->inputMap->MapBool(
+        Button::MoveRight, Window::get()->keyboardID, gainput::KeyRight);
+    Window::get()->inputMap->MapBool(
+        Button::Interact, Window::get()->mouseID, gainput::MouseButtonLeft);
+    Window::get()->inputMap->MapFloat(
+        Button::AxisX, Window::get()->mouseID, gainput::MouseAxisX);
+    Window::get()->inputMap->MapFloat(
+        Button::AxisY, Window::get()->mouseID, gainput::MouseAxisY);
+    Window::get()->inputMap->MapFloat(
+        Button::AxisDeltaX, Window::get()->rawMouseID, gainput::MouseAxisX);
+    Window::get()->inputMap->MapFloat(
+        Button::AxisDeltaY, Window::get()->rawMouseID, gainput::MouseAxisY);
 
     this->loadContent();
     this->flush();
@@ -278,16 +259,29 @@ void Application::update() {
     elapsedSeconds += dt;
     const float t = static_cast<float>(elapsedSeconds);
 
-    this->inputManager.Update();
     this->mouseDelta = {
-        this->inputMap.GetFloatDelta(
-            static_cast<gainput::UserButtonId>(Button::AxisDeltaX)),
-        this->inputMap.GetFloatDelta(
-            static_cast<gainput::UserButtonId>(Button::AxisDeltaY))};
-    this->mousePos = {this->inputMap.GetFloat(
-                          static_cast<gainput::UserButtonId>(Button::AxisX)),
-        this->inputMap.GetFloat(
-            static_cast<gainput::UserButtonId>(Button::AxisY))};
+        Window::get()->inputMap->GetFloatDelta(Button::AxisDeltaX),
+        Window::get()->inputMap->GetFloatDelta(Button::AxisDeltaY)};
+    this->mousePos = {Window::get()->inputMap->GetFloat(Button::AxisX),
+        Window::get()->inputMap->GetFloat(Button::AxisY)};
+    // spdlog::debug(
+    //     "mouseDelta: {},{}", this->mouseDelta.x(), this->mouseDelta.y());
+    // spdlog::debug("mousePos: {},{}", this->mousePos.x(), this->mousePos.y());
+    if (Window::get()->inputMap->GetBoolWasDown(Button::Interact)) {
+        spdlog::debug("Interact button was pressed");
+    }
+    if (Window::get()->inputMap->GetBoolWasDown(Button::MoveForward)) {
+        spdlog::debug("MoveForward button was pressed");
+    }
+    if (Window::get()->inputMap->GetBoolWasDown(Button::MoveBackward)) {
+        spdlog::debug("MoveBackward button was pressed");
+    }
+    if (Window::get()->inputMap->GetBoolWasDown(Button::MoveLeft)) {
+        spdlog::debug("MoveLeft button was pressed");
+    }
+    if (Window::get()->inputMap->GetBoolWasDown(Button::MoveRight)) {
+        spdlog::debug("MoveRight button was pressed");
+    }
     {
         this->matModel = XMMatrixIdentity();
 
@@ -371,9 +365,6 @@ template <> void Application::handleEvent(const EventResize& e) {
         // Don't allow 0 size swap chain back buffers.
         this->clientWidth = std::max(1u, e.width);
         this->clientHeight = std::max(1u, e.height);
-
-        this->inputManager.SetDisplaySize(
-            this->clientWidth, this->clientHeight);
 
         // Flush the GPU queue to make sure the swap chain's back buffers
         //  are not being referenced by an in-flight command list.

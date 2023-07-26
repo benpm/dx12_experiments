@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gainput/gainput.h>
 #include <application.hpp>
 
 class Window {
@@ -10,6 +11,9 @@ class Window {
     bool tearingSupported;
     Application* app = nullptr;
     uint32_t width, height;
+    std::unique_ptr<gainput::InputManager> inputManager = nullptr;
+    std::unique_ptr<gainput::InputMap> inputMap = nullptr;
+    gainput::DeviceId keyboardID, mouseID, rawMouseID;
 
     void registerApp(Application* app);
     void initialize(HINSTANCE hInstance,

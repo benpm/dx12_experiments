@@ -117,7 +117,8 @@ enum class Key : UINT {
     ScrollLock = VK_SCROLL
 };
 enum class MouseButton { Left, Right, Middle, XButton1, XButton2 };
-enum class Button : gainput::UserButtonId {
+namespace Button {
+enum : gainput::UserButtonId {
     MoveForward,
     MoveBackward,
     MoveLeft,
@@ -127,7 +128,9 @@ enum class Button : gainput::UserButtonId {
     AxisY,
     AxisDeltaX,
     AxisDeltaY,
+    Exit,
 };
+}
 
 struct EventPaint {};
 struct EventKeyDown {

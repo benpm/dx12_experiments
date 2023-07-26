@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/main.exe",
             "args": [],
-            "stopAtEntry": true,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/Debug",
             "environment": [],
             "console": "internalConsole",

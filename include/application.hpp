@@ -34,13 +34,6 @@ class Application {
     vec2 mousePos;
     // Mouse delta position
     vec2 mouseDelta;
-    // Input manager from gainput
-    gainput::InputManager inputManager;
-    // Input mapping
-    gainput::InputMap inputMap;
-    // Input devices
-    gainput::DeviceId keyboardID, mouseID, rawMouseID;
-
     // DirectX 12 Objects
     ComPtr<ID3D12Device2> device;
     CommandQueue cmdQueue;

@@ -68,8 +68,9 @@
         "xhash": "cpp",
         "array": "cpp",
         "ranges": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "deque": "cpp"
     },
-    "C_Cpp.errorSquiggles": "disabled",
+    "C_Cpp.errorSquiggles": "enabled",
     "editor.formatOnSave": true
 }

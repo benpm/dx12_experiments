@@ -14,6 +14,7 @@ add_executable(main
     "src/logging.cpp"
     "src/camera.cpp"
     "src/input.cpp"
+    "src/upload_buffer.cpp"
 
     "src/vertex_shader.hlsl"
     "src/pixel_shader.hlsl"

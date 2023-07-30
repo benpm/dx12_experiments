@@ -141,10 +141,27 @@ inline vec4 operator*(const vec4& v, const mat4& m) {
     return {XMVector4Transform(v, m)};
 }
 
+// Degrees to radians literal
 inline constexpr float operator""_deg(long double degrees) {
     return static_cast<float>(degrees) * pi / 180.0f;
 }
-
 inline constexpr float operator""_deg(unsigned long long degrees) {
     return static_cast<float>(degrees) * pi / 180.0f;
+}
+
+// Kilobytes to bytes
+inline constexpr size_t operator""_KB(unsigned long long v) {
+    return static_cast<size_t>(v * 1024uLL);
+}
+
+// Megabytes to bytes
+inline constexpr size_t operator""_MB(unsigned long long v) {
+    return static_cast<size_t>(v * 1024uLL * 1024uLL);
+}
+
+// Returns the given size aligned to the given power-of-2 alignment
+inline constexpr size_t align(const size_t size, const size_t alignment) {
+    assert(
+        (alignment & (alignment - 1)) == 0 && "Alignment must be a power of 2");
+    return (size + alignment - 1) & ~(alignment - 1);
 }

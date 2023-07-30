@@ -16,8 +16,11 @@ class Camera {
 
 class OrbitCamera : public Camera {
    public:
+    // Horizontal angle
     float yaw = 0.0_deg;
+    // Vertical angle
     float pitch = 0.0_deg;
+    // Distance from target pos
     float radius = 5.0f;
 
     mat4 view() const override;

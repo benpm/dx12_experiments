@@ -68,13 +68,19 @@ Application::Application() : inputMap(inputManager, "input_map") {
     this->inputMap.MapBool(
         Button::MoveRight, this->keyboardID, gainput::KeyRight);
     this->inputMap.MapBool(
-        Button::Interact, this->mouseID, gainput::MouseButtonLeft);
+        Button::LeftClick, this->mouseID, gainput::MouseButtonLeft);
+    this->inputMap.MapBool(
+        Button::RightClick, this->mouseID, gainput::MouseButtonRight);
     this->inputMap.MapFloat(Button::AxisX, this->mouseID, gainput::MouseAxisX);
     this->inputMap.MapFloat(Button::AxisY, this->mouseID, gainput::MouseAxisY);
     this->inputMap.MapFloat(
-        Button::AxisDeltaX, this->rawMouseID, gainput::MouseAxisX);
+        Button::AxisDeltaX, this->mouseID, gainput::MouseAxisX);
     this->inputMap.MapFloat(
-        Button::AxisDeltaY, this->rawMouseID, gainput::MouseAxisY);
+        Button::AxisDeltaY, this->mouseID, gainput::MouseAxisY);
+    this->inputMap.MapBool(
+        Button::ScrollUp, this->mouseID, gainput::MouseButtonWheelUp);
+    this->inputMap.MapBool(
+        Button::ScrollDown, this->mouseID, gainput::MouseButtonWheelDown);
 
     this->loadContent();
     this->flush();
@@ -254,6 +260,7 @@ void Application::update() {
     static std::chrono::high_resolution_clock clock;
     static auto t0 = clock.now();
 
+    // Timing
     frameCounter++;
     auto t1 = clock.now();
     auto deltaTime = t1 - t0;
@@ -262,39 +269,31 @@ void Application::update() {
     elapsedSeconds += dt;
     const float t = static_cast<float>(elapsedSeconds);
 
+    const float w = static_cast<float>(this->clientWidth);
+    const float h = static_cast<float>(this->clientHeight);
+
+    // Handle input
     this->mouseDelta = {this->inputMap.GetFloatDelta(Button::AxisDeltaX),
         this->inputMap.GetFloatDelta(Button::AxisDeltaY)};
     this->mousePos = {this->inputMap.GetFloat(Button::AxisX),
         this->inputMap.GetFloat(Button::AxisY)};
-    // spdlog::debug(
-    //     "mouseDelta: {},{}", this->mouseDelta.x(), this->mouseDelta.y());
-    // spdlog::debug("mousePos: {},{}", this->mousePos.x(), this->mousePos.y());
-    if (this->inputMap.GetBoolWasDown(Button::Interact)) {
-        spdlog::debug("Interact button was pressed");
-    }
-    if (this->inputMap.GetBoolWasDown(Button::MoveForward)) {
-        spdlog::debug("MoveForward button was pressed");
-    }
-    if (this->inputMap.GetBoolWasDown(Button::MoveBackward)) {
-        spdlog::debug("MoveBackward button was pressed");
-    }
-    if (this->inputMap.GetBoolWasDown(Button::MoveLeft)) {
-        spdlog::debug("MoveLeft button was pressed");
-    }
-    if (this->inputMap.GetBoolWasDown(Button::MoveRight)) {
-        spdlog::debug("MoveRight button was pressed");
-    }
-    {
-        this->matModel = XMMatrixIdentity();
 
-        this->cam.pitch +=
-            (this->mouseDelta.y() / static_cast<float>(this->clientWidth)) * pi;
-        this->cam.yaw +=
-            (this->mouseDelta.x() / static_cast<float>(this->clientWidth)) *
-            tau;
-        this->cam.radius = 10.0f;
-        this->cam.aspectRatio = static_cast<float>(this->clientWidth) /
-                                static_cast<float>(this->clientHeight);
+    // Camera controls
+    this->matModel = XMMatrixIdentity();
+    if (this->inputMap.GetBool(Button::LeftClick)) {
+        this->cam.pitch += (this->mouseDelta.y() / w) * 180_deg;
+        this->cam.yaw -= (this->mouseDelta.x() / w) * 360_deg;
+        this->cam.pitch = std::clamp(this->cam.pitch, -89.9_deg, 89.9_deg);
+    }
+    if (this->inputMap.GetBool(Button::RightClick)) {
+        this->cam.radius += this->mouseDelta.y() / w;
+    }
+    this->cam.aspectRatio = w / h;
+    if (this->inputMap.GetBoolWasDown(Button::ScrollUp)) {
+        this->cam.radius *= 1.25f;
+    }
+    if (this->inputMap.GetBoolWasDown(Button::ScrollDown)) {
+        this->cam.radius *= 0.8f;
     }
 }
 
@@ -360,41 +359,6 @@ void Application::render() {
     }
 }
 
-template <> void Application::handleEvent(const EventResize& e) {
-    if (this->clientWidth != e.width || this->clientHeight != e.height) {
-        // Don't allow 0 size swap chain back buffers.
-        this->clientWidth = std::max(1u, e.width);
-        this->clientHeight = std::max(1u, e.height);
-
-        // Flush the GPU queue to make sure the swap chain's back buffers
-        //  are not being referenced by an in-flight command list.
-        this->cmdQueue.flush();
-        for (int i = 0; i < this->nBuffers; ++i) {
-            // Any references to the back buffers must be released
-            //  before the swap chain can be resized.
-            this->backBuffers[i].Reset();
-        }
-        DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-        chkDX(this->swapChain->GetDesc(&swapChainDesc));
-        chkDX(this->swapChain->ResizeBuffers(this->nBuffers, this->clientWidth,
-            this->clientHeight, swapChainDesc.BufferDesc.Format,
-            swapChainDesc.Flags));
-        spdlog::debug("resized buffers in swap chain to ({},{})",
-            this->clientWidth, this->clientHeight);
-
-        this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
-
-        this->updateRenderTargetViews(this->rtvHeap);
-
-        this->viewport =
-            CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(this->clientWidth),
-                static_cast<float>(this->clientHeight));
-        this->resizeDepthBuffer(this->clientWidth, this->clientHeight);
-
-        this->flush();
-    }
-}
-
 void Application::setFullscreen(bool val) {
     if (this->fullscreen != val) {
         this->fullscreen = val;
@@ -443,41 +407,6 @@ void Application::setFullscreen(bool val) {
 
 void Application::flush() {
     this->cmdQueue.flush();
-}
-
-template <> void Application::handleEvent(const EventKeyDown& e) {
-    this->pressedKeys.insert(e.key);
-    switch (e.key) {
-        case Key::Escape:
-            ::PostQuitMessage(0);
-            break;
-        case Key::F11:
-            this->setFullscreen(!this->fullscreen);
-            break;
-    }
-}
-
-template <> void Application::handleEvent(const EventKeyUp& e) {
-    this->pressedKeys.erase(e.key);
-}
-
-template <> void Application::handleEvent(const EventMouseMove& e) {
-    const vec2 v(static_cast<float>(e.x), static_cast<float>(e.y));
-    this->mouseDelta = v - this->mousePos;
-    this->mousePos = v;
-}
-
-template <> void Application::handleEvent(const EventMouseButtonDown& e) {
-    this->pressedMouseButtons.insert(e.button);
-}
-
-template <> void Application::handleEvent(const EventMouseButtonUp& e) {
-    this->pressedMouseButtons.erase(e.button);
-}
-
-template <> void Application::handleEvent(const EventPaint&) {
-    this->update();
-    this->render();
 }
 
 bool Application::loadContent() {
@@ -592,4 +521,39 @@ bool Application::loadContent() {
     this->resizeDepthBuffer(this->clientWidth, this->clientHeight);
 
     return this->contentLoaded;
+}
+
+void Application::onResize(uint32_t width, uint32_t height) {
+    if (this->clientWidth != width || this->clientHeight != height) {
+        // Don't allow 0 size swap chain back buffers.
+        this->clientWidth = std::max(1u, width);
+        this->clientHeight = std::max(1u, height);
+
+        // Flush the GPU queue to make sure the swap chain's back buffers
+        //  are not being referenced by an in-flight command list.
+        this->cmdQueue.flush();
+        for (int i = 0; i < this->nBuffers; ++i) {
+            // Any references to the back buffers must be released
+            //  before the swap chain can be resized.
+            this->backBuffers[i].Reset();
+        }
+        DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+        chkDX(this->swapChain->GetDesc(&swapChainDesc));
+        chkDX(this->swapChain->ResizeBuffers(this->nBuffers, this->clientWidth,
+            this->clientHeight, swapChainDesc.BufferDesc.Format,
+            swapChainDesc.Flags));
+        spdlog::debug("resized buffers in swap chain to ({},{})",
+            this->clientWidth, this->clientHeight);
+
+        this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
+
+        this->updateRenderTargetViews(this->rtvHeap);
+
+        this->viewport =
+            CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(this->clientWidth),
+                static_cast<float>(this->clientHeight));
+        this->resizeDepthBuffer(this->clientWidth, this->clientHeight);
+
+        this->flush();
+    }
 }

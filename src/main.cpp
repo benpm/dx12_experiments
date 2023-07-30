@@ -18,24 +18,20 @@ _Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance,
     ::UpdateWindow(Window::get()->hWnd);
 
     MSG msg = {};
-    BOOL msgReceived = TRUE;
-    while (msgReceived = ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) &&
-                         msg.message != WM_QUIT) {
-        if (msgReceived == -1) {
-            spdlog::error("PeekMessage error: {}", ::GetLastError());
-            break;
-        }
+    while (
+        ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) && msg.message != WM_QUIT) {
         ::TranslateMessage(&msg);
         ::DispatchMessage(&msg);
-        app.inputManager.HandleMessage(msg);
+        inputManager.HandleMessage(msg);
+        if (app.inputMap.GetBoolWasDown(Button::Exit)) {
+            Window::get()->doExit = true;
+        }
         if (Window::get()->doExit) {
             spdlog::debug("exit requested");
             ::PostQuitMessage(0);
             Window::get()->doExit = false;
         }
     }
-    spdlog::debug("msgReceived: {}", msgReceived);
-    spdlog::debug("Window::get()->doExit: {}", Window::get()->doExit);
 
     return 0;
 }

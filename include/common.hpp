@@ -26,6 +26,8 @@ inline void chkDX(HRESULT hr) {
 }
 
 constexpr float pi = XM_PI;
+constexpr float pi2 = XM_PIDIV2;
+constexpr float pi4 = XM_PIDIV4;
 constexpr float tau = XM_2PI;
 
 template <uint8_t D> struct vec {
@@ -139,6 +141,10 @@ inline vec4 operator*(const vec4& v, const mat4& m) {
     return {XMVector4Transform(v, m)};
 }
 
-inline float operator""_deg(long double degrees) {
+inline constexpr float operator""_deg(long double degrees) {
+    return static_cast<float>(degrees) * pi / 180.0f;
+}
+
+inline constexpr float operator""_deg(unsigned long long degrees) {
     return static_cast<float>(degrees) * pi / 180.0f;
 }

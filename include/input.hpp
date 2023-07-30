@@ -123,36 +123,16 @@ enum : gainput::UserButtonId {
     MoveBackward,
     MoveLeft,
     MoveRight,
-    Interact,
+    LeftClick,
+    RightClick,
     AxisX,
     AxisY,
     AxisDeltaX,
     AxisDeltaY,
     Exit,
+    ScrollUp,
+    ScrollDown,
 };
 }
 
-struct EventPaint {};
-struct EventKeyDown {
-    Key key;
-};
-struct EventKeyUp {
-    Key key;
-};
-struct EventMouseMove {
-    int x, y;
-};
-struct EventMouseWheel {
-    int delta;
-};
-struct EventMouseButtonDown {
-    MouseButton button;
-};
-struct EventMouseButtonUp {
-    MouseButton button;
-};
-struct EventResize {
-    uint32_t width, height;
-};
-
-extern gainput::InputManager inputManger;
+extern gainput::InputManager inputManager;

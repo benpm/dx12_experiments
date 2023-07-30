@@ -12,19 +12,18 @@ LRESULT CALLBACK WndProc(HWND hwnd,
     if (app != nullptr && app->isInitialized && app->contentLoaded) {
         switch (message) {
             case WM_PAINT:
-                app->inputManager.Update();
-                app->handleEvent(EventPaint{});
+                inputManager.Update();
+                app->update();
+                app->render();
                 break;
             case WM_SYSCHAR:
                 break;
             case WM_SIZE: {
                 RECT clientRect = {};
                 ::GetClientRect(app->hWnd, &clientRect);
-                EventResize event = {.width = static_cast<uint32_t>(
-                                         clientRect.right - clientRect.left),
-                    .height = static_cast<uint32_t>(
-                        clientRect.bottom - clientRect.top)};
-                app->handleEvent(event);
+                app->onResize(
+                    static_cast<uint32_t>(clientRect.right - clientRect.left),
+                    static_cast<uint32_t>(clientRect.bottom - clientRect.top));
             } break;
             case WM_DESTROY:
                 Window::get()->doExit = true;
@@ -39,7 +38,7 @@ LRESULT CALLBACK WndProc(HWND hwnd,
     return 0;
 }
 
-void RegisterWindowClass(HINSTANCE hInst, const wchar_t* windowClassName) {
+void regWinClass(HINSTANCE hInst, const wchar_t* windowClassName) {
     // Register a window class for creating our render window with.
     WNDCLASSEXW windowClass = {};
 
@@ -60,7 +59,7 @@ void RegisterWindowClass(HINSTANCE hInst, const wchar_t* windowClassName) {
     assert(atom > 0);
 }
 
-void EnableDebugLayer() {
+void enableDebugging() {
 #if defined(_DEBUG)
     // Always enable the debug layer before doing anything DX12 related
     // so all possible errors generated while creating DX12 objects
@@ -72,7 +71,7 @@ void EnableDebugLayer() {
 #endif
 }
 
-HWND MakeWindow(const wchar_t* windowClassName,
+HWND makeWindow(const wchar_t* windowClassName,
     HINSTANCE hInst,
     const wchar_t* windowTitle,
     uint32_t width,
@@ -102,7 +101,7 @@ HWND MakeWindow(const wchar_t* windowClassName,
 }
 
 // Query for compatible adapter (GPU device)
-ComPtr<IDXGIAdapter4> GetAdapter(bool useWarp) {
+ComPtr<IDXGIAdapter4> getAdapter(bool useWarp) {
     ComPtr<IDXGIFactory4> dxgiFactory;
     UINT createFactoryFlags = 0;
 #if defined(_DEBUG)
@@ -142,7 +141,7 @@ ComPtr<IDXGIAdapter4> GetAdapter(bool useWarp) {
 }
 
 // Create the D3D12 device using the given adapter
-ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter) {
+ComPtr<ID3D12Device2> createDevice(ComPtr<IDXGIAdapter4> adapter) {
     ComPtr<ID3D12Device2> d3d12Device2;
     chkDX(D3D12CreateDevice(
         adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));
@@ -181,7 +180,7 @@ ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter) {
     return d3d12Device2;
 }
 
-bool CheckTearingSupport() {
+bool getTearingSupport() {
     BOOL allowTearing = FALSE;
 
     // Rather than create the DXGI 1.5 factory interface directly, we create the
@@ -221,17 +220,17 @@ void Window::initialize(HINSTANCE hInstance,
     int nCmdShow) {
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-    EnableDebugLayer();
+    enableDebugging();
 
-    this->tearingSupported = CheckTearingSupport();
+    this->tearingSupported = getTearingSupport();
 
     const wchar_t* windowClassName = L"DX12WindowClass";
-    RegisterWindowClass(hInstance, windowClassName);
+    regWinClass(hInstance, windowClassName);
     const std::wstring wTitle(title.begin(), title.end());
-    this->hWnd = MakeWindow(windowClassName, hInstance, wTitle.c_str(), w, h);
+    this->hWnd = makeWindow(windowClassName, hInstance, wTitle.c_str(), w, h);
     GetWindowRect(this->hWnd, &this->windowRect);
 
-    this->device = CreateDevice(GetAdapter(false));
+    this->device = createDevice(getAdapter(false));
     this->width = w;
     this->height = h;
 }

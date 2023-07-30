@@ -69,7 +69,6 @@ class Application {
     bool fullscreen = false;
 
     // Input
-    gainput::InputManager inputManager;
     gainput::InputMap inputMap;
     gainput::DeviceId keyboardID, mouseID, rawMouseID;
 
@@ -112,15 +111,9 @@ class Application {
     // Clear the render target and present the backbuffer
     void render();
     void setFullscreen(bool val);
+    // Flush contents of command queue(s)
     void flush();
     bool loadContent();
-    template <typename T> void handleEvent(const T& e){};
+    // Called
+    void onResize(uint32_t width, uint32_t height);
 };
-
-template <> void Application::handleEvent(const EventKeyDown& e);
-template <> void Application::handleEvent(const EventKeyUp& e);
-template <> void Application::handleEvent(const EventResize& e);
-template <> void Application::handleEvent(const EventMouseMove& e);
-template <> void Application::handleEvent(const EventMouseButtonDown& e);
-template <> void Application::handleEvent(const EventMouseButtonUp& e);
-template <> void Application::handleEvent(const EventPaint& e);

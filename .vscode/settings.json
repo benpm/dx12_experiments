@@ -67,7 +67,8 @@
         "xloctime": "cpp",
         "xhash": "cpp",
         "array": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "iostream": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "editor.formatOnSave": true

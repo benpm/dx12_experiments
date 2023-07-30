@@ -4,33 +4,38 @@
 _Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance,
     HINSTANCE,
     LPSTR,
-    int) {
+    int nCmdShow) {
     setupLogging();
 
-    Window::get()->initialize(hInstance, "D3D12 Experiment", 1280, 720);
+    Window::get()->initialize(
+        hInstance, "D3D12 Experiment", 1280, 720, nCmdShow);
     Application app;
 
     // Input map just to show example for closing window with escape
-    Window::get()->inputMap->MapBool(
-        Button::Exit, Window::get()->keyboardID, gainput::KeyEscape);
+    app.inputMap.MapBool(Button::Exit, app.keyboardID, gainput::KeyEscape);
 
-    bool quit = false;
-    while (!quit) {
-        // Handle windows messages, sending to gainput
-        Window::get()->inputManager->Update();
-        MSG msg = {};
-        while (::PeekMessage(&msg, Window::get()->hWnd, 0, 0, PM_REMOVE)) {
-            if (msg.message == WM_QUIT) {
-                quit = true;
-            }
-            ::TranslateMessage(&msg);
-            ::DispatchMessage(&msg);
-            Window::get()->inputManager->HandleMessage(msg);
+    ::ShowWindow(Window::get()->hWnd, SW_SHOW);
+    ::UpdateWindow(Window::get()->hWnd);
+
+    MSG msg = {};
+    BOOL msgReceived = TRUE;
+    while (msgReceived = ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) &&
+                         msg.message != WM_QUIT) {
+        if (msgReceived == -1) {
+            spdlog::error("PeekMessage error: {}", ::GetLastError());
+            break;
         }
-        if (Window::get()->inputMap->GetBoolWasDown(Button::Exit)) {
-            quit = true;
+        ::TranslateMessage(&msg);
+        ::DispatchMessage(&msg);
+        app.inputManager.HandleMessage(msg);
+        if (Window::get()->doExit) {
+            spdlog::debug("exit requested");
+            ::PostQuitMessage(0);
+            Window::get()->doExit = false;
         }
     }
+    spdlog::debug("msgReceived: {}", msgReceived);
+    spdlog::debug("Window::get()->doExit: {}", Window::get()->doExit);
 
     return 0;
 }

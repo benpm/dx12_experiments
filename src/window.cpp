@@ -8,14 +8,13 @@ LRESULT CALLBACK WndProc(HWND hwnd,
     WPARAM wParam,
     LPARAM lParam) {
     Application* app = Window::get()->app;
+
     if (app != nullptr && app->isInitialized && app->contentLoaded) {
         switch (message) {
             case WM_PAINT:
+                app->inputManager.Update();
                 app->handleEvent(EventPaint{});
                 break;
-            // The default window procedure will play a system notification
-            // sound when pressing the Alt+Enter keyboard combination if this
-            // message is not handled.
             case WM_SYSCHAR:
                 break;
             case WM_SIZE: {
@@ -25,18 +24,16 @@ LRESULT CALLBACK WndProc(HWND hwnd,
                                          clientRect.right - clientRect.left),
                     .height = static_cast<uint32_t>(
                         clientRect.bottom - clientRect.top)};
-                Window::get()->inputManager->SetDisplaySize(
-                    event.width, event.height);
                 app->handleEvent(event);
             } break;
             case WM_DESTROY:
-                ::PostQuitMessage(0);
+                Window::get()->doExit = true;
                 break;
             default:
-                return ::DefWindowProcW(hwnd, message, wParam, lParam);
+                return ::DefWindowProc(hwnd, message, wParam, lParam);
         }
     } else {
-        return ::DefWindowProcW(hwnd, message, wParam, lParam);
+        return ::DefWindowProc(hwnd, message, wParam, lParam);
     }
 
     return 0;
@@ -71,7 +68,7 @@ void EnableDebugLayer() {
     ComPtr<ID3D12Debug> debugInterface;
     chkDX(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
     debugInterface->EnableDebugLayer();
-    std::cout << "Direct3D Debug Layer activated" << std::endl;
+    spdlog::debug("Direct3D Debug Layer Enabled");
 #endif
 }
 
@@ -220,7 +217,8 @@ void Window::registerApp(Application* application) {
 void Window::initialize(HINSTANCE hInstance,
     const std::string& title,
     uint32_t w,
-    uint32_t h) {
+    uint32_t h,
+    int nCmdShow) {
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
     EnableDebugLayer();
@@ -236,20 +234,4 @@ void Window::initialize(HINSTANCE hInstance,
     this->device = CreateDevice(GetAdapter(false));
     this->width = w;
     this->height = h;
-
-    ::ShowWindow(this->hWnd, SW_SHOW);
-    ::UpdateWindow(this->hWnd);
-
-    // Set up input devices
-    this->inputManager = std::make_unique<gainput::InputManager>();
-    this->inputManager->SetDisplaySize(w, h);
-    this->keyboardID =
-        this->inputManager->CreateDevice<gainput::InputDeviceKeyboard>();
-    this->mouseID =
-        this->inputManager->CreateDevice<gainput::InputDeviceMouse>();
-    this->rawMouseID =
-        this->inputManager->CreateDevice<gainput::InputDeviceMouse>(
-            gainput::InputDevice::AutoIndex, gainput::InputDevice::DV_RAW);
-    this->inputMap =
-        std::make_unique<gainput::InputMap>(*this->inputManager, "input_map");
 }

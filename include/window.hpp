@@ -11,15 +11,14 @@ class Window {
     bool tearingSupported;
     Application* app = nullptr;
     uint32_t width, height;
-    std::unique_ptr<gainput::InputManager> inputManager = nullptr;
-    std::unique_ptr<gainput::InputMap> inputMap = nullptr;
-    gainput::DeviceId keyboardID, mouseID, rawMouseID;
+    bool doExit = false;
 
     void registerApp(Application* app);
     void initialize(HINSTANCE hInstance,
         const std::string& title,
         uint32_t width,
-        uint32_t height);
+        uint32_t height,
+        int nCmdShow);
 
     static Window* get() {
         static Window window{};

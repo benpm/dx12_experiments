@@ -154,3 +154,5 @@ struct EventMouseButtonUp {
 struct EventResize {
     uint32_t width, height;
 };
+
+extern gainput::InputManager inputManger;

@@ -68,6 +68,11 @@ class Application {
     bool tearingSupported = false;
     bool fullscreen = false;
 
+    // Input
+    gainput::InputManager inputManager;
+    gainput::InputMap inputMap;
+    gainput::DeviceId keyboardID, mouseID, rawMouseID;
+
     Application();
     ~Application();
 

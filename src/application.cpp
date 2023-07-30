@@ -20,7 +20,7 @@ constexpr WORD cubeIndices[36] = {
     4, 0, 3, 4, 3, 7   // -y
 };
 
-Application::Application() {
+Application::Application() : inputMap(inputManager, "input_map") {
     Window::get()->registerApp(this);
 
     if (!XMVerifyCPUSupport()) {
@@ -46,32 +46,35 @@ Application::Application() {
 
     this->updateRenderTargetViews(this->rtvHeap);
 
-    Window::get()->inputMap->MapBool(
-        Button::MoveForward, Window::get()->keyboardID, gainput::KeyW);
-    Window::get()->inputMap->MapBool(
-        Button::MoveForward, Window::get()->keyboardID, gainput::KeyUp);
-    Window::get()->inputMap->MapBool(
-        Button::MoveBackward, Window::get()->keyboardID, gainput::KeyS);
-    Window::get()->inputMap->MapBool(
-        Button::MoveBackward, Window::get()->keyboardID, gainput::KeyDown);
-    Window::get()->inputMap->MapBool(
-        Button::MoveLeft, Window::get()->keyboardID, gainput::KeyA);
-    Window::get()->inputMap->MapBool(
-        Button::MoveLeft, Window::get()->keyboardID, gainput::KeyLeft);
-    Window::get()->inputMap->MapBool(
-        Button::MoveRight, Window::get()->keyboardID, gainput::KeyD);
-    Window::get()->inputMap->MapBool(
-        Button::MoveRight, Window::get()->keyboardID, gainput::KeyRight);
-    Window::get()->inputMap->MapBool(
-        Button::Interact, Window::get()->mouseID, gainput::MouseButtonLeft);
-    Window::get()->inputMap->MapFloat(
-        Button::AxisX, Window::get()->mouseID, gainput::MouseAxisX);
-    Window::get()->inputMap->MapFloat(
-        Button::AxisY, Window::get()->mouseID, gainput::MouseAxisY);
-    Window::get()->inputMap->MapFloat(
-        Button::AxisDeltaX, Window::get()->rawMouseID, gainput::MouseAxisX);
-    Window::get()->inputMap->MapFloat(
-        Button::AxisDeltaY, Window::get()->rawMouseID, gainput::MouseAxisY);
+    // Setup gainput
+    this->keyboardID =
+        inputManager.CreateDevice<gainput::InputDeviceKeyboard>();
+    this->mouseID = inputManager.CreateDevice<gainput::InputDeviceMouse>();
+    this->rawMouseID = inputManager.CreateDevice<gainput::InputDeviceMouse>(
+        gainput::InputDevice::AutoIndex, gainput::InputDevice::DV_RAW);
+    inputManager.SetDisplaySize(1, 1);
+    this->inputMap.MapBool(
+        Button::MoveForward, this->keyboardID, gainput::KeyW);
+    this->inputMap.MapBool(
+        Button::MoveForward, this->keyboardID, gainput::KeyUp);
+    this->inputMap.MapBool(
+        Button::MoveBackward, this->keyboardID, gainput::KeyS);
+    this->inputMap.MapBool(
+        Button::MoveBackward, this->keyboardID, gainput::KeyDown);
+    this->inputMap.MapBool(Button::MoveLeft, this->keyboardID, gainput::KeyA);
+    this->inputMap.MapBool(
+        Button::MoveLeft, this->keyboardID, gainput::KeyLeft);
+    this->inputMap.MapBool(Button::MoveRight, this->keyboardID, gainput::KeyD);
+    this->inputMap.MapBool(
+        Button::MoveRight, this->keyboardID, gainput::KeyRight);
+    this->inputMap.MapBool(
+        Button::Interact, this->mouseID, gainput::MouseButtonLeft);
+    this->inputMap.MapFloat(Button::AxisX, this->mouseID, gainput::MouseAxisX);
+    this->inputMap.MapFloat(Button::AxisY, this->mouseID, gainput::MouseAxisY);
+    this->inputMap.MapFloat(
+        Button::AxisDeltaX, this->rawMouseID, gainput::MouseAxisX);
+    this->inputMap.MapFloat(
+        Button::AxisDeltaY, this->rawMouseID, gainput::MouseAxisY);
 
     this->loadContent();
     this->flush();
@@ -259,36 +262,33 @@ void Application::update() {
     elapsedSeconds += dt;
     const float t = static_cast<float>(elapsedSeconds);
 
-    this->mouseDelta = {
-        Window::get()->inputMap->GetFloatDelta(Button::AxisDeltaX),
-        Window::get()->inputMap->GetFloatDelta(Button::AxisDeltaY)};
-    this->mousePos = {Window::get()->inputMap->GetFloat(Button::AxisX),
-        Window::get()->inputMap->GetFloat(Button::AxisY)};
+    this->mouseDelta = {this->inputMap.GetFloatDelta(Button::AxisDeltaX),
+        this->inputMap.GetFloatDelta(Button::AxisDeltaY)};
+    this->mousePos = {this->inputMap.GetFloat(Button::AxisX),
+        this->inputMap.GetFloat(Button::AxisY)};
     // spdlog::debug(
     //     "mouseDelta: {},{}", this->mouseDelta.x(), this->mouseDelta.y());
     // spdlog::debug("mousePos: {},{}", this->mousePos.x(), this->mousePos.y());
-    if (Window::get()->inputMap->GetBoolWasDown(Button::Interact)) {
+    if (this->inputMap.GetBoolWasDown(Button::Interact)) {
         spdlog::debug("Interact button was pressed");
     }
-    if (Window::get()->inputMap->GetBoolWasDown(Button::MoveForward)) {
+    if (this->inputMap.GetBoolWasDown(Button::MoveForward)) {
         spdlog::debug("MoveForward button was pressed");
     }
-    if (Window::get()->inputMap->GetBoolWasDown(Button::MoveBackward)) {
+    if (this->inputMap.GetBoolWasDown(Button::MoveBackward)) {
         spdlog::debug("MoveBackward button was pressed");
     }
-    if (Window::get()->inputMap->GetBoolWasDown(Button::MoveLeft)) {
+    if (this->inputMap.GetBoolWasDown(Button::MoveLeft)) {
         spdlog::debug("MoveLeft button was pressed");
     }
-    if (Window::get()->inputMap->GetBoolWasDown(Button::MoveRight)) {
+    if (this->inputMap.GetBoolWasDown(Button::MoveRight)) {
         spdlog::debug("MoveRight button was pressed");
     }
     {
         this->matModel = XMMatrixIdentity();
 
         this->cam.pitch +=
-            (this->mouseDelta.y() / static_cast<float>(this->clientWidth)) *
-                pi -
-            (pi / 2.0f);
+            (this->mouseDelta.y() / static_cast<float>(this->clientWidth)) * pi;
         this->cam.yaw +=
             (this->mouseDelta.x() / static_cast<float>(this->clientWidth)) *
             tau;
@@ -373,8 +373,6 @@ template <> void Application::handleEvent(const EventResize& e) {
             // Any references to the back buffers must be released
             //  before the swap chain can be resized.
             this->backBuffers[i].Reset();
-            // this->frameFenceValues[i] =
-            // this->frameFenceValues[this->currentBackBufferIndex];
         }
         DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
         chkDX(this->swapChain->GetDesc(&swapChainDesc));

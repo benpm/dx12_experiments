@@ -15,6 +15,7 @@ add_executable(main
     "src/camera.cpp"
     "src/input.cpp"
     "src/upload_buffer.cpp"
+    "src/descriptor_allocator.cpp"
 
     "src/vertex_shader.hlsl"
     "src/pixel_shader.hlsl"

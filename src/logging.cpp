@@ -1,7 +1,15 @@
+#include <cstdio>
 #include <logging.hpp>
 
 void setupLogging()
 {
+    // Attach to parent console so stderr/stdout work when launched from a terminal
+    if (AttachConsole(ATTACH_PARENT_PROCESS) != 0) {
+        FILE* dummy = nullptr;
+        freopen_s(&dummy, "CONERR$", "w", stderr);
+        freopen_s(&dummy, "CONOUT$", "w", stdout);
+    }
+
     // Logger setup
     auto stderrSink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
     auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log.txt", true);

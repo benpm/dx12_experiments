@@ -16,10 +16,15 @@ _Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR,
     ::UpdateWindow(Window::get()->hWnd);
 
     MSG msg = {};
-    while (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) != 0 && msg.message != WM_QUIT) {
-        ::TranslateMessage(&msg);
-        ::DispatchMessage(&msg);
-        inputManager.HandleMessage(msg);
+    while (msg.message != WM_QUIT) {
+        while (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) != 0) {
+            if (msg.message == WM_QUIT) {
+                break;
+            }
+            ::TranslateMessage(&msg);
+            ::DispatchMessage(&msg);
+            inputManager.HandleMessage(msg);
+        }
         if (app.inputMap.GetBoolWasDown(Button::Exit)) {
             Window::get()->doExit = true;
         }

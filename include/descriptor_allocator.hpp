@@ -10,14 +10,17 @@ class DescriptorAllocatorPage;
  * Represents a single descriptor allocation in a descriptor heap. It is a
  * move-only, self-freeing type. It wraps D3D12_CPU_DESCRIPTOR_HANDLE.
  */
-class DescriptorAllocation {
+class DescriptorAllocation
+{
    public:
     // Initializes as a null descriptor
     DescriptorAllocation();
-    DescriptorAllocation(D3D12_CPU_DESCRIPTOR_HANDLE handle,
+    DescriptorAllocation(
+        D3D12_CPU_DESCRIPTOR_HANDLE handle,
         uint32_t numHandles,
         uint32_t descriptorSize,
-        std::shared_ptr<DescriptorAllocatorPage> page);
+        std::shared_ptr<DescriptorAllocatorPage> page
+    );
     ~DescriptorAllocation();
     // Prevents copy and assignment, allows moving
     DescriptorAllocation(const DescriptorAllocation&) = delete;
@@ -53,15 +56,15 @@ class DescriptorAllocation {
  * resources that may be load and unloaded during runtime.
  * It uses a free list allocation scheme.
  */
-class DescriptorAllocator {
+class DescriptorAllocator
+{
    public:
     // Type of descriptor: CBV_SRV_UAV, SAMPLER, RTV, DSV
     const D3D12_DESCRIPTOR_HEAP_TYPE type;
     // Number of descriptors per heap allowed
     const uint32_t nDescPerHeap;
 
-    DescriptorAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type,
-        uint32_t nDescPerHeap = 256u);
+    DescriptorAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t nDescPerHeap = 256u);
     virtual ~DescriptorAllocator();
 
     // Allocate given number of contiguous descriptors from a CPU visible
@@ -72,8 +75,7 @@ class DescriptorAllocator {
     void releaseStaleDescriptors(uint64_t frameNumber);
 
    private:
-    using DescriptorHeapPool =
-        std::vector<std::shared_ptr<DescriptorAllocatorPage>>;
+    using DescriptorHeapPool = std::vector<std::shared_ptr<DescriptorAllocatorPage>>;
 
     DescriptorHeapPool heapPool;
     // Indices of available heaps in pool
@@ -85,9 +87,11 @@ class DescriptorAllocator {
     std::shared_ptr<DescriptorAllocatorPage> createAllocatorPage();
 };
 
-class DescriptorAllocatorPage
-    : public std::enable_shared_from_this<DescriptorAllocatorPage> {
+class DescriptorAllocatorPage : public std::enable_shared_from_this<DescriptorAllocatorPage>
+{
    public:
-    DescriptorAllocatorPage(D3D12_DESCRIPTOR_HEAP_TYPE type,
-        uint32_t nDescPerHeap);
+    DescriptorAllocatorPage(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t nDescPerHeap);
+
+    // Release a descriptor allocation back to this page
+    void free(DescriptorAllocation&& allocation, uint64_t frameNumber);
 };

@@ -3,10 +3,8 @@
 #include <iostream>
 #include <window.hpp>
 
-LRESULT CALLBACK WndProc(HWND hwnd,
-    UINT message,
-    WPARAM wParam,
-    LPARAM lParam) {
+LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
     Application* app = Window::get()->app;
 
     if (app != nullptr && app->isInitialized && app->contentLoaded) {
@@ -23,7 +21,8 @@ LRESULT CALLBACK WndProc(HWND hwnd,
                 ::GetClientRect(app->hWnd, &clientRect);
                 app->onResize(
                     static_cast<uint32_t>(clientRect.right - clientRect.left),
-                    static_cast<uint32_t>(clientRect.bottom - clientRect.top));
+                    static_cast<uint32_t>(clientRect.bottom - clientRect.top)
+                );
             } break;
             case WM_DESTROY:
                 Window::get()->doExit = true;
@@ -38,7 +37,8 @@ LRESULT CALLBACK WndProc(HWND hwnd,
     return 0;
 }
 
-void regWinClass(HINSTANCE hInst, const wchar_t* windowClassName) {
+void regWinClass(HINSTANCE hInst, const wchar_t* windowClassName)
+{
     // Register a window class for creating our render window with.
     WNDCLASSEXW windowClass = {};
 
@@ -59,7 +59,8 @@ void regWinClass(HINSTANCE hInst, const wchar_t* windowClassName) {
     assert(atom > 0);
 }
 
-void enableDebugging() {
+void enableDebugging()
+{
 #if defined(_DEBUG)
     // Always enable the debug layer before doing anything DX12 related
     // so all possible errors generated while creating DX12 objects
@@ -71,16 +72,18 @@ void enableDebugging() {
 #endif
 }
 
-HWND makeWindow(const wchar_t* windowClassName,
+HWND makeWindow(
+    const wchar_t* windowClassName,
     HINSTANCE hInst,
     const wchar_t* windowTitle,
     uint32_t width,
-    uint32_t height) {
+    uint32_t height
+)
+{
     int screenWidth = ::GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = ::GetSystemMetrics(SM_CYSCREEN);
 
-    RECT windowRect = {
-        0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
+    RECT windowRect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
     ::AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
     int windowWidth = windowRect.right - windowRect.left;
@@ -91,9 +94,10 @@ HWND makeWindow(const wchar_t* windowClassName,
     int windowX = std::max<int>(0, (screenWidth - windowWidth) / 2);
     int windowY = std::max<int>(0, (screenHeight - windowHeight) / 2);
 
-    HWND hWnd = ::CreateWindowExW(NULL, windowClassName, windowTitle,
-        WS_OVERLAPPEDWINDOW, windowX, windowY, windowWidth, windowHeight, NULL,
-        NULL, hInst, nullptr);
+    HWND hWnd = ::CreateWindowExW(
+        NULL, windowClassName, windowTitle, WS_OVERLAPPEDWINDOW, windowX, windowY, windowWidth,
+        windowHeight, NULL, NULL, hInst, nullptr
+    );
 
     assert(hWnd && "Failed to create window");
 
@@ -101,7 +105,8 @@ HWND makeWindow(const wchar_t* windowClassName,
 }
 
 // Query for compatible adapter (GPU device)
-ComPtr<IDXGIAdapter4> getAdapter(bool useWarp) {
+ComPtr<IDXGIAdapter4> getAdapter(bool useWarp)
+{
     ComPtr<IDXGIFactory4> dxgiFactory;
     UINT createFactoryFlags = 0;
 #if defined(_DEBUG)
@@ -117,8 +122,7 @@ ComPtr<IDXGIAdapter4> getAdapter(bool useWarp) {
         chkDX(dxgiAdapter1.As(&dxgiAdapter4));
     } else {
         SIZE_T maxDedicatedVideoMemory = 0;
-        for (UINT i = 0; dxgiFactory->EnumAdapters1(i, &dxgiAdapter1) !=
-                         DXGI_ERROR_NOT_FOUND;
+        for (UINT i = 0; dxgiFactory->EnumAdapters1(i, &dxgiAdapter1) != DXGI_ERROR_NOT_FOUND;
              ++i) {
             DXGI_ADAPTER_DESC1 dxgiAdapterDesc1;
             dxgiAdapter1->GetDesc1(&dxgiAdapterDesc1);
@@ -127,10 +131,10 @@ ComPtr<IDXGIAdapter4> getAdapter(bool useWarp) {
             // actually creating it. The adapter with the largest dedicated
             // video memory is favored.
             if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 &&
-                SUCCEEDED(D3D12CreateDevice(dxgiAdapter1.Get(),
-                    D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)) &&
-                dxgiAdapterDesc1.DedicatedVideoMemory >
-                    maxDedicatedVideoMemory) {
+                SUCCEEDED(D3D12CreateDevice(
+                    dxgiAdapter1.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr
+                )) &&
+                dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory) {
                 maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
                 chkDX(dxgiAdapter1.As(&dxgiAdapter4));
             }
@@ -141,10 +145,10 @@ ComPtr<IDXGIAdapter4> getAdapter(bool useWarp) {
 }
 
 // Create the D3D12 device using the given adapter
-ComPtr<ID3D12Device2> createDevice(ComPtr<IDXGIAdapter4> adapter) {
+ComPtr<ID3D12Device2> createDevice(ComPtr<IDXGIAdapter4> adapter)
+{
     ComPtr<ID3D12Device2> d3d12Device2;
-    chkDX(D3D12CreateDevice(
-        adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));
+    chkDX(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));
     // Enable debug messages in debug mode.
 #if defined(_DEBUG)
     ComPtr<ID3D12InfoQueue> pInfoQueue;
@@ -156,7 +160,7 @@ ComPtr<ID3D12Device2> createDevice(ComPtr<IDXGIAdapter4> adapter) {
         // D3D12_MESSAGE_CATEGORY Categories[] = {};
 
         // Suppress messages based on their severity level
-        D3D12_MESSAGE_SEVERITY Severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
+        D3D12_MESSAGE_SEVERITY Severities[] = { D3D12_MESSAGE_SEVERITY_INFO };
 
         // Suppress individual messages by their ID
         D3D12_MESSAGE_ID DenyIds[] = {
@@ -180,7 +184,8 @@ ComPtr<ID3D12Device2> createDevice(ComPtr<IDXGIAdapter4> adapter) {
     return d3d12Device2;
 }
 
-bool getTearingSupport() {
+bool getTearingSupport()
+{
     BOOL allowTearing = FALSE;
 
     // Rather than create the DXGI 1.5 factory interface directly, we create the
@@ -192,8 +197,8 @@ bool getTearingSupport() {
         ComPtr<IDXGIFactory5> factory5;
         if (SUCCEEDED(factory4.As(&factory5))) {
             if (FAILED(factory5->CheckFeatureSupport(
-                    DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing,
-                    sizeof(allowTearing)))) {
+                    DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)
+                ))) {
                 allowTearing = FALSE;
             }
         }
@@ -202,7 +207,8 @@ bool getTearingSupport() {
     return allowTearing == TRUE;
 }
 
-void Window::registerApp(Application* application) {
+void Window::registerApp(Application* application)
+{
     assert(this->app == nullptr);
 
     this->app = application;
@@ -213,11 +219,14 @@ void Window::registerApp(Application* application) {
     this->app->clientHeight = this->height;
 }
 
-void Window::initialize(HINSTANCE hInstance,
+void Window::initialize(
+    HINSTANCE hInstance,
     const std::string& title,
     uint32_t w,
     uint32_t h,
-    int nCmdShow) {
+    int nCmdShow
+)
+{
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
     enableDebugging();

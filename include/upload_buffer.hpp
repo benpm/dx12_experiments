@@ -12,15 +12,18 @@
  * NOTE: We assume that each instance is associated with only one single command
  * list / allocator.
  */
-class UploadBuffer {
+class UploadBuffer
+{
    public:
-    struct Allocation {
+    struct Allocation
+    {
         void* cpu = nullptr;
         D3D12_GPU_VIRTUAL_ADDRESS gpu = 0;
     };
 
    private:
-    class Page {
+    class Page
+    {
        public:
         Page(size_t sizeInBytes);
         ~Page();

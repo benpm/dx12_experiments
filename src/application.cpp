@@ -2,14 +2,14 @@
 #include <window.hpp>
 
 constexpr VertexPosColor cubeVerts[8] = {
-    {XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f)},  // 0
-    {XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f)},   // 1
-    {XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f)},    // 2
-    {XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f)},   // 3
-    {XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f)},   // 4
-    {XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f)},    // 5
-    {XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f)},     // 6
-    {XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f)}     // 7
+    { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) },  // 0
+    { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },   // 1
+    { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) },    // 2
+    { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },   // 3
+    { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },   // 4
+    { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) },    // 5
+    { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) },     // 6
+    { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }     // 7
 };
 constexpr WORD cubeIndices[36] = {
     0, 1, 2, 0, 2, 3,  // -z
@@ -20,18 +20,20 @@ constexpr WORD cubeIndices[36] = {
     4, 0, 3, 4, 3, 7   // -y
 };
 
-Application::Application() : inputMap(inputManager, "input_map") {
+Application::Application() : inputMap(inputManager, "input_map")
+{
     Window::get()->registerApp(this);
 
     if (!XMVerifyCPUSupport()) {
-        MessageBoxA(nullptr, "Failed to verify DirectX Math library support.",
-            "Error", MB_OK | MB_ICONERROR);
+        MessageBoxA(
+            nullptr, "Failed to verify DirectX Math library support.", "Error", MB_OK | MB_ICONERROR
+        );
         std::exit(EXIT_FAILURE);
     }
 
-    this->viewport =
-        CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(this->clientWidth),
-            static_cast<float>(this->clientHeight));
+    this->viewport = CD3DX12_VIEWPORT(
+        0.0f, 0.0f, static_cast<float>(this->clientWidth), static_cast<float>(this->clientHeight)
+    );
 
     this->cmdQueue = CommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
@@ -39,78 +41,73 @@ Application::Application() : inputMap(inputManager, "input_map") {
 
     this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
-    this->rtvHeap =
-        this->createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, this->nBuffers);
-    this->rtvDescSize = device->GetDescriptorHandleIncrementSize(
-        D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    this->rtvHeap = this->createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, this->nBuffers);
+    this->rtvDescSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
     this->updateRenderTargetViews(this->rtvHeap);
 
     // Setup gainput
-    this->keyboardID =
-        inputManager.CreateDevice<gainput::InputDeviceKeyboard>();
+    this->keyboardID = inputManager.CreateDevice<gainput::InputDeviceKeyboard>();
     this->mouseID = inputManager.CreateDevice<gainput::InputDeviceMouse>();
     this->rawMouseID = inputManager.CreateDevice<gainput::InputDeviceMouse>(
-        gainput::InputDevice::AutoIndex, gainput::InputDevice::DV_RAW);
+        gainput::InputDevice::AutoIndex, gainput::InputDevice::DV_RAW
+    );
     inputManager.SetDisplaySize(1, 1);
-    this->inputMap.MapBool(
-        Button::MoveForward, this->keyboardID, gainput::KeyW);
-    this->inputMap.MapBool(
-        Button::MoveForward, this->keyboardID, gainput::KeyUp);
-    this->inputMap.MapBool(
-        Button::MoveBackward, this->keyboardID, gainput::KeyS);
-    this->inputMap.MapBool(
-        Button::MoveBackward, this->keyboardID, gainput::KeyDown);
+    this->inputMap.MapBool(Button::MoveForward, this->keyboardID, gainput::KeyW);
+    this->inputMap.MapBool(Button::MoveForward, this->keyboardID, gainput::KeyUp);
+    this->inputMap.MapBool(Button::MoveBackward, this->keyboardID, gainput::KeyS);
+    this->inputMap.MapBool(Button::MoveBackward, this->keyboardID, gainput::KeyDown);
     this->inputMap.MapBool(Button::MoveLeft, this->keyboardID, gainput::KeyA);
-    this->inputMap.MapBool(
-        Button::MoveLeft, this->keyboardID, gainput::KeyLeft);
+    this->inputMap.MapBool(Button::MoveLeft, this->keyboardID, gainput::KeyLeft);
     this->inputMap.MapBool(Button::MoveRight, this->keyboardID, gainput::KeyD);
-    this->inputMap.MapBool(
-        Button::MoveRight, this->keyboardID, gainput::KeyRight);
-    this->inputMap.MapBool(
-        Button::LeftClick, this->mouseID, gainput::MouseButtonLeft);
-    this->inputMap.MapBool(
-        Button::RightClick, this->mouseID, gainput::MouseButtonRight);
+    this->inputMap.MapBool(Button::MoveRight, this->keyboardID, gainput::KeyRight);
+    this->inputMap.MapBool(Button::LeftClick, this->mouseID, gainput::MouseButtonLeft);
+    this->inputMap.MapBool(Button::RightClick, this->mouseID, gainput::MouseButtonRight);
     this->inputMap.MapFloat(Button::AxisX, this->mouseID, gainput::MouseAxisX);
     this->inputMap.MapFloat(Button::AxisY, this->mouseID, gainput::MouseAxisY);
-    this->inputMap.MapFloat(
-        Button::AxisDeltaX, this->mouseID, gainput::MouseAxisX);
-    this->inputMap.MapFloat(
-        Button::AxisDeltaY, this->mouseID, gainput::MouseAxisY);
-    this->inputMap.MapBool(
-        Button::ScrollUp, this->mouseID, gainput::MouseButtonWheelUp);
-    this->inputMap.MapBool(
-        Button::ScrollDown, this->mouseID, gainput::MouseButtonWheelDown);
+    this->inputMap.MapFloat(Button::AxisDeltaX, this->mouseID, gainput::MouseAxisX);
+    this->inputMap.MapFloat(Button::AxisDeltaY, this->mouseID, gainput::MouseAxisY);
+    this->inputMap.MapBool(Button::ScrollUp, this->mouseID, gainput::MouseButtonWheelUp);
+    this->inputMap.MapBool(Button::ScrollDown, this->mouseID, gainput::MouseButtonWheelDown);
 
     this->loadContent();
     this->flush();
     this->isInitialized = true;
 }
 
-Application::~Application() {
+Application::~Application()
+{
     this->flush();
 }
 
-void Application::transitionResource(ComPtr<ID3D12GraphicsCommandList2> cmdList,
+void Application::transitionResource(
+    ComPtr<ID3D12GraphicsCommandList2> cmdList,
     ComPtr<ID3D12Resource> resource,
     D3D12_RESOURCE_STATES beforeState,
-    D3D12_RESOURCE_STATES afterState) {
-    CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-        resource.Get(), beforeState, afterState);
+    D3D12_RESOURCE_STATES afterState
+)
+{
+    CD3DX12_RESOURCE_BARRIER barrier =
+        CD3DX12_RESOURCE_BARRIER::Transition(resource.Get(), beforeState, afterState);
     cmdList->ResourceBarrier(1, &barrier);
 }
 
-void Application::clearRTV(ComPtr<ID3D12GraphicsCommandList2> cmdList,
+void Application::clearRTV(
+    ComPtr<ID3D12GraphicsCommandList2> cmdList,
     D3D12_CPU_DESCRIPTOR_HANDLE rtv,
-    FLOAT clearColor[4]) {
+    FLOAT clearColor[4]
+)
+{
     cmdList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
 }
 
-void Application::clearDepth(ComPtr<ID3D12GraphicsCommandList2> cmdList,
+void Application::clearDepth(
+    ComPtr<ID3D12GraphicsCommandList2> cmdList,
     D3D12_CPU_DESCRIPTOR_HANDLE dsv,
-    FLOAT depth) {
-    cmdList->ClearDepthStencilView(
-        dsv, D3D12_CLEAR_FLAG_DEPTH, depth, 0, 0, nullptr);
+    FLOAT depth
+)
+{
+    cmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, depth, 0, 0, nullptr);
 }
 
 void Application::updateBufferResource(
@@ -120,37 +117,41 @@ void Application::updateBufferResource(
     size_t numElements,
     size_t elementSize,
     const void* bufferData,
-    D3D12_RESOURCE_FLAGS flags) {
+    D3D12_RESOURCE_FLAGS flags
+)
+{
     const size_t bufSize = numElements * elementSize;
     {  // Create a committed resource for the GPU resource in a default heap
         const CD3DX12_HEAP_PROPERTIES pHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-        const CD3DX12_RESOURCE_DESC pDesc =
-            CD3DX12_RESOURCE_DESC::Buffer(bufSize, flags);
-        chkDX(device->CreateCommittedResource(&pHeapProperties,
-            D3D12_HEAP_FLAG_NONE, &pDesc, D3D12_RESOURCE_STATE_COPY_DEST,
-            nullptr, IID_PPV_ARGS(pDestinationResource)));
+        const CD3DX12_RESOURCE_DESC pDesc = CD3DX12_RESOURCE_DESC::Buffer(bufSize, flags);
+        chkDX(device->CreateCommittedResource(
+            &pHeapProperties, D3D12_HEAP_FLAG_NONE, &pDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
+            IID_PPV_ARGS(pDestinationResource)
+        ));
     }
 
     if (bufferData) {
         // Create a committed resource for the upload
         const CD3DX12_HEAP_PROPERTIES pHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
-        const CD3DX12_RESOURCE_DESC pDesc =
-            CD3DX12_RESOURCE_DESC::Buffer(bufSize);
-        chkDX(device->CreateCommittedResource(&pHeapProperties,
-            D3D12_HEAP_FLAG_NONE, &pDesc, D3D12_RESOURCE_STATE_GENERIC_READ,
-            nullptr, IID_PPV_ARGS(pIntermediateResource)));
+        const CD3DX12_RESOURCE_DESC pDesc = CD3DX12_RESOURCE_DESC::Buffer(bufSize);
+        chkDX(device->CreateCommittedResource(
+            &pHeapProperties, D3D12_HEAP_FLAG_NONE, &pDesc, D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr, IID_PPV_ARGS(pIntermediateResource)
+        ));
 
         D3D12_SUBRESOURCE_DATA subresourceData = {};
         subresourceData.pData = bufferData;
         subresourceData.RowPitch = bufSize;
         subresourceData.SlicePitch = subresourceData.RowPitch;
 
-        ::UpdateSubresources(cmdList.Get(), *pDestinationResource,
-            *pIntermediateResource, 0, 0, 1, &subresourceData);
+        ::UpdateSubresources(
+            cmdList.Get(), *pDestinationResource, *pIntermediateResource, 0, 0, 1, &subresourceData
+        );
     }
 }
 
-void Application::resizeDepthBuffer(uint32_t width, uint32_t height) {
+void Application::resizeDepthBuffer(uint32_t width, uint32_t height)
+{
     assert(this->contentLoaded);
 
     this->flush();
@@ -159,14 +160,15 @@ void Application::resizeDepthBuffer(uint32_t width, uint32_t height) {
 
     D3D12_CLEAR_VALUE optimizedClearValue = {};
     optimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-    optimizedClearValue.DepthStencil = {1.0f, 0};
+    optimizedClearValue.DepthStencil = { 1.0f, 0 };
     const CD3DX12_HEAP_PROPERTIES pHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-    const CD3DX12_RESOURCE_DESC pDesc =
-        CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, width, height, 1, 0,
-            1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-    chkDX(device->CreateCommittedResource(&pHeapProperties,
-        D3D12_HEAP_FLAG_NONE, &pDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        &optimizedClearValue, IID_PPV_ARGS(&this->depthBuffer)));
+    const CD3DX12_RESOURCE_DESC pDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+        DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
+    );
+    chkDX(device->CreateCommittedResource(
+        &pHeapProperties, D3D12_HEAP_FLAG_NONE, &pDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        &optimizedClearValue, IID_PPV_ARGS(&this->depthBuffer)
+    ));
 
     // Update depth-stencil view
     D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
@@ -174,12 +176,14 @@ void Application::resizeDepthBuffer(uint32_t width, uint32_t height) {
     dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     dsvDesc.Texture2D.MipSlice = 0;
     dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-    device->CreateDepthStencilView(this->depthBuffer.Get(), &dsvDesc,
-        this->dsvHeap->GetCPUDescriptorHandleForHeapStart());
+    device->CreateDepthStencilView(
+        this->depthBuffer.Get(), &dsvDesc, this->dsvHeap->GetCPUDescriptorHandleForHeapStart()
+    );
 }
 
 // Create swap chain which describes the sequence of buffers used for rendering
-ComPtr<IDXGISwapChain4> Application::createSwapChain() {
+ComPtr<IDXGISwapChain4> Application::createSwapChain()
+{
     ComPtr<IDXGISwapChain4> dxgiSwapChain4;
     ComPtr<IDXGIFactory4> dxgiFactory4;
     UINT createFactoryFlags = 0;
@@ -194,7 +198,7 @@ ComPtr<IDXGISwapChain4> Application::createSwapChain() {
     swapChainDesc.Height = this->clientHeight;
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     swapChainDesc.Stereo = FALSE;
-    swapChainDesc.SampleDesc = {1, 0};
+    swapChainDesc.SampleDesc = { 1, 0 };
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.BufferCount = this->nBuffers;
     swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
@@ -202,51 +206,47 @@ ComPtr<IDXGISwapChain4> Application::createSwapChain() {
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
     // It is recommended to always allow tearing if tearing support is
     // available.
-    swapChainDesc.Flags =
-        this->tearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+    swapChainDesc.Flags = this->tearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
     ComPtr<IDXGISwapChain1> swapChain1;
-    chkDX(dxgiFactory4->CreateSwapChainForHwnd(this->cmdQueue.queue.Get(),
-        this->hWnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
+    chkDX(dxgiFactory4->CreateSwapChainForHwnd(
+        this->cmdQueue.queue.Get(), this->hWnd, &swapChainDesc, nullptr, nullptr, &swapChain1
+    ));
 
     // Disable the Alt+Enter fullscreen toggle feature. Switching to fullscreen
     // will be handled manually.
-    chkDX(
-        dxgiFactory4->MakeWindowAssociation(this->hWnd, DXGI_MWA_NO_ALT_ENTER));
+    chkDX(dxgiFactory4->MakeWindowAssociation(this->hWnd, DXGI_MWA_NO_ALT_ENTER));
 
     chkDX(swapChain1.As(&dxgiSwapChain4));
     this->curBackBufIdx = dxgiSwapChain4->GetCurrentBackBufferIndex();
     return dxgiSwapChain4;
 }
 
-ComPtr<ID3D12DescriptorHeap> Application::createDescHeap(
-    D3D12_DESCRIPTOR_HEAP_TYPE type,
-    uint32_t numDescriptors) {
+ComPtr<ID3D12DescriptorHeap>
+Application::createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors)
+{
     ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 
     D3D12_DESCRIPTOR_HEAP_DESC desc = {};
     desc.NumDescriptors = numDescriptors;
     desc.Type = type;
 
-    chkDX(this->device->CreateDescriptorHeap(
-        &desc, IID_PPV_ARGS(&descriptorHeap)));
+    chkDX(this->device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
 
     return descriptorHeap;
 }
 
-void Application::updateRenderTargetViews(
-    ComPtr<ID3D12DescriptorHeap> descriptorHeap) {
-    UINT rtvDescriptorSize = this->device->GetDescriptorHandleIncrementSize(
-        D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+void Application::updateRenderTargetViews(ComPtr<ID3D12DescriptorHeap> descriptorHeap)
+{
+    UINT rtvDescriptorSize =
+        this->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
-        descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     for (int i = 0; i < this->nBuffers; ++i) {
         ComPtr<ID3D12Resource> backBuffer;
         chkDX(this->swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
 
-        this->device->CreateRenderTargetView(
-            backBuffer.Get(), nullptr, rtvHandle);
+        this->device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
 
         this->backBuffers[i] = backBuffer;
 
@@ -254,7 +254,8 @@ void Application::updateRenderTargetViews(
     }
 }
 
-void Application::update() {
+void Application::update()
+{
     static uint64_t frameCounter = 0;
     static double elapsedSeconds = 0.0;
     static std::chrono::high_resolution_clock clock;
@@ -273,10 +274,10 @@ void Application::update() {
     const float h = static_cast<float>(this->clientHeight);
 
     // Handle input
-    this->mouseDelta = {this->inputMap.GetFloatDelta(Button::AxisDeltaX),
-        this->inputMap.GetFloatDelta(Button::AxisDeltaY)};
-    this->mousePos = {this->inputMap.GetFloat(Button::AxisX),
-        this->inputMap.GetFloat(Button::AxisY)};
+    this->mouseDelta = { this->inputMap.GetFloatDelta(Button::AxisDeltaX),
+                         this->inputMap.GetFloatDelta(Button::AxisDeltaY) };
+    this->mousePos = { this->inputMap.GetFloat(Button::AxisX),
+                       this->inputMap.GetFloat(Button::AxisY) };
 
     // Camera controls
     this->matModel = XMMatrixIdentity();
@@ -297,18 +298,21 @@ void Application::update() {
     }
 }
 
-void Application::render() {
+void Application::render()
+{
     auto backBuffer = this->backBuffers[this->curBackBufIdx];
     auto cmdList = this->cmdQueue.getCmdList();
 
     {
         // Transition backbuffer to render target state, then clear
-        this->transitionResource(cmdList, backBuffer,
-            D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-        FLOAT clearColor[] = {0.4f, 0.6f, 0.9f, 1.0f};
+        this->transitionResource(
+            cmdList, backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET
+        );
+        FLOAT clearColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
         CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
-            this->rtvHeap->GetCPUDescriptorHandleForHeapStart(),
-            this->curBackBufIdx, this->rtvDescSize);
+            this->rtvHeap->GetCPUDescriptorHandleForHeapStart(), this->curBackBufIdx,
+            this->rtvDescSize
+        );
         this->clearRTV(cmdList, rtv, clearColor);
         auto dsv = this->dsvHeap->GetCPUDescriptorHandleForHeapStart();
         this->clearDepth(cmdList, dsv);
@@ -328,10 +332,8 @@ void Application::render() {
         cmdList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
         // Update root params: MVP matrix into constant buffer for vert shader
-        const XMMATRIX mvpMatrix =
-            this->matModel * this->cam.view() * this->cam.proj();
-        cmdList->SetGraphicsRoot32BitConstants(
-            0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
+        const XMMATRIX mvpMatrix = this->matModel * this->cam.view() * this->cam.proj();
+        cmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
 
         // Draw
         cmdList->DrawIndexedInstanced(_countof(cubeIndices), 1, 0, 0, 0);
@@ -340,26 +342,24 @@ void Application::render() {
     // Present
     {
         // Transition backbuffer to present state
-        this->transitionResource(cmdList, backBuffer,
-            D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+        this->transitionResource(
+            cmdList, backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
+        );
 
         // Execute command list and present, then wait for completion
-        this->frameFenceValues[this->curBackBufIdx] =
-            this->cmdQueue.execCmdList(cmdList);
+        this->frameFenceValues[this->curBackBufIdx] = this->cmdQueue.execCmdList(cmdList);
 
         UINT syncInterval = this->vsync ? 1 : 0;
-        UINT presentFlags = this->tearingSupported && !this->vsync
-                                ? DXGI_PRESENT_ALLOW_TEARING
-                                : 0;
+        UINT presentFlags = this->tearingSupported && !this->vsync ? DXGI_PRESENT_ALLOW_TEARING : 0;
         chkDX(this->swapChain->Present(syncInterval, presentFlags));
         this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
-        this->cmdQueue.waitForFenceVal(
-            this->frameFenceValues[this->curBackBufIdx]);
+        this->cmdQueue.waitForFenceVal(this->frameFenceValues[this->curBackBufIdx]);
     }
 }
 
-void Application::setFullscreen(bool val) {
+void Application::setFullscreen(bool val)
+{
     if (this->fullscreen != val) {
         this->fullscreen = val;
 
@@ -370,69 +370,70 @@ void Application::setFullscreen(bool val) {
             // Set the window style to a borderless window so the client area
             // fills
             //  the entire screen.
-            UINT windowStyle = WS_OVERLAPPEDWINDOW &
-                               ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME |
-                                   WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+            UINT windowStyle = WS_OVERLAPPEDWINDOW & ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME |
+                                                       WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
 
             ::SetWindowLongW(this->hWnd, GWL_STYLE, windowStyle);
             // Query the name of the nearest display device for the window.
             //  This is required to set the fullscreen dimensions of the window
             //  when using a multi-monitor setup.
-            HMONITOR hMonitor =
-                ::MonitorFromWindow(this->hWnd, MONITOR_DEFAULTTONEAREST);
+            HMONITOR hMonitor = ::MonitorFromWindow(this->hWnd, MONITOR_DEFAULTTONEAREST);
             MONITORINFOEX monitorInfo = {};
             monitorInfo.cbSize = sizeof(MONITORINFOEX);
             ::GetMonitorInfo(hMonitor, &monitorInfo);
-            ::SetWindowPos(this->hWnd, HWND_TOP, monitorInfo.rcMonitor.left,
-                monitorInfo.rcMonitor.top,
+            ::SetWindowPos(
+                this->hWnd, HWND_TOP, monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top,
                 monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
                 monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
-                SWP_FRAMECHANGED | SWP_NOACTIVATE);
+                SWP_FRAMECHANGED | SWP_NOACTIVATE
+            );
 
             ::ShowWindow(this->hWnd, SW_MAXIMIZE);
         } else {
             // Restore all the window decorators.
             ::SetWindowLong(this->hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
 
-            ::SetWindowPos(this->hWnd, HWND_NOTOPMOST, this->windowRect.left,
-                this->windowRect.top,
+            ::SetWindowPos(
+                this->hWnd, HWND_NOTOPMOST, this->windowRect.left, this->windowRect.top,
                 this->windowRect.right - this->windowRect.left,
-                this->windowRect.bottom - this->windowRect.top,
-                SWP_FRAMECHANGED | SWP_NOACTIVATE);
+                this->windowRect.bottom - this->windowRect.top, SWP_FRAMECHANGED | SWP_NOACTIVATE
+            );
 
             ::ShowWindow(this->hWnd, SW_NORMAL);
         }
     }
 }
 
-void Application::flush() {
+void Application::flush()
+{
     this->cmdQueue.flush();
 }
 
-bool Application::loadContent() {
+bool Application::loadContent()
+{
     auto cmdList = this->cmdQueue.getCmdList();
 
     // Upload vertex buffer data
     ComPtr<ID3D12Resource> intermediateVertexBuffer;
-    this->updateBufferResource(cmdList, &this->vertexBuffer,
-        &intermediateVertexBuffer, _countof(cubeVerts), sizeof(VertexPosColor),
-        cubeVerts);
+    this->updateBufferResource(
+        cmdList, &this->vertexBuffer, &intermediateVertexBuffer, _countof(cubeVerts),
+        sizeof(VertexPosColor), cubeVerts
+    );
 
     // Create the vertex buffer view
-    this->vertexBufferView.BufferLocation =
-        this->vertexBuffer->GetGPUVirtualAddress();
+    this->vertexBufferView.BufferLocation = this->vertexBuffer->GetGPUVirtualAddress();
     this->vertexBufferView.SizeInBytes = sizeof(cubeVerts);
     this->vertexBufferView.StrideInBytes = sizeof(VertexPosColor);
 
     // Upload index buffer data
     ComPtr<ID3D12Resource> intermediateIndexBuffer;
-    this->updateBufferResource(cmdList, &this->indexBuffer,
-        &intermediateIndexBuffer, _countof(cubeIndices), sizeof(WORD),
-        cubeIndices);
+    this->updateBufferResource(
+        cmdList, &this->indexBuffer, &intermediateIndexBuffer, _countof(cubeIndices), sizeof(WORD),
+        cubeIndices
+    );
 
     // Create the index buffer view
-    this->indexBufferView.BufferLocation =
-        this->indexBuffer->GetGPUVirtualAddress();
+    this->indexBufferView.BufferLocation = this->indexBuffer->GetGPUVirtualAddress();
     this->indexBufferView.Format = DXGI_FORMAT_R16_UINT;
     this->indexBufferView.SizeInBytes = sizeof(cubeIndices);
 
@@ -441,8 +442,7 @@ bool Application::loadContent() {
     dsvHeapDesc.NumDescriptors = 1;
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    chkDX(this->device->CreateDescriptorHeap(
-        &dsvHeapDesc, IID_PPV_ARGS(&this->dsvHeap)));
+    chkDX(this->device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&this->dsvHeap)));
 
     // Load pre-compiled shaders
     ComPtr<ID3DBlob> vertexShader, pixelShader;
@@ -452,18 +452,18 @@ bool Application::loadContent() {
     // Create the vertex input layout which describes the way the vertex buffer
     // is structured
     D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,
-            D3D12_APPEND_ALIGNED_ELEMENT,
-            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-        {"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,
-            D3D12_APPEND_ALIGNED_ELEMENT,
-            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}};
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
+          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
+          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
 
     // Specify a root signature
     D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
     featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
     if (FAILED(this->device->CheckFeatureSupport(
-            D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)))) {
+            D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)
+        ))) {
         featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
     }
     const D3D12_ROOT_SIGNATURE_FLAGS rootSigFlags =
@@ -473,21 +473,23 @@ bool Application::loadContent() {
         D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
     CD3DX12_ROOT_PARAMETER1 rootParams[1];
-    rootParams[0].InitAsConstants(
-        sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+    rootParams[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSigDesc;
-    rootSigDesc.Init_1_1(
-        _countof(rootParams), rootParams, 0, nullptr, rootSigFlags);
+    rootSigDesc.Init_1_1(_countof(rootParams), rootParams, 0, nullptr, rootSigFlags);
 
     // Serialize and create the root signature
     ComPtr<ID3DBlob> rootSigBlob, errorBlob;
     chkDX(D3DX12SerializeVersionedRootSignature(
-        &rootSigDesc, featureData.HighestVersion, &rootSigBlob, &errorBlob));
-    chkDX(this->device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(),
-        rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&this->rootSignature)));
+        &rootSigDesc, featureData.HighestVersion, &rootSigBlob, &errorBlob
+    ));
+    chkDX(this->device->CreateRootSignature(
+        0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(),
+        IID_PPV_ARGS(&this->rootSignature)
+    ));
 
     // Create the pipeline state object
-    struct PipelineStateStream {
+    struct PipelineStateStream
+    {
         CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
         CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
         CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
@@ -500,17 +502,15 @@ bool Application::loadContent() {
     rtvFormats.NumRenderTargets = 1;
     rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
     pipelineStateStream.pRootSignature = this->rootSignature.Get();
-    pipelineStateStream.InputLayout = {inputLayout, _countof(inputLayout)};
-    pipelineStateStream.PrimitiveTopologyType =
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    pipelineStateStream.InputLayout = { inputLayout, _countof(inputLayout) };
+    pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     pipelineStateStream.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
     pipelineStateStream.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
     pipelineStateStream.DSVFormat = DXGI_FORMAT_D32_FLOAT;
     pipelineStateStream.RTVFormats = rtvFormats;
-    D3D12_PIPELINE_STATE_STREAM_DESC psoDesc = {
-        sizeof(PipelineStateStream), &pipelineStateStream};
-    chkDX(this->device->CreatePipelineState(
-        &psoDesc, IID_PPV_ARGS(&this->pipelineState)));
+    D3D12_PIPELINE_STATE_STREAM_DESC psoDesc = { sizeof(PipelineStateStream),
+                                                 &pipelineStateStream };
+    chkDX(this->device->CreatePipelineState(&psoDesc, IID_PPV_ARGS(&this->pipelineState)));
 
     // Execute the created command list on the GPU
     uint64_t fenceValue = this->cmdQueue.execCmdList(cmdList);
@@ -523,7 +523,8 @@ bool Application::loadContent() {
     return this->contentLoaded;
 }
 
-void Application::onResize(uint32_t width, uint32_t height) {
+void Application::onResize(uint32_t width, uint32_t height)
+{
     if (this->clientWidth != width || this->clientHeight != height) {
         // Don't allow 0 size swap chain back buffers.
         this->clientWidth = std::max(1u, width);
@@ -539,19 +540,22 @@ void Application::onResize(uint32_t width, uint32_t height) {
         }
         DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
         chkDX(this->swapChain->GetDesc(&swapChainDesc));
-        chkDX(this->swapChain->ResizeBuffers(this->nBuffers, this->clientWidth,
-            this->clientHeight, swapChainDesc.BufferDesc.Format,
-            swapChainDesc.Flags));
-        spdlog::debug("resized buffers in swap chain to ({},{})",
-            this->clientWidth, this->clientHeight);
+        chkDX(this->swapChain->ResizeBuffers(
+            this->nBuffers, this->clientWidth, this->clientHeight, swapChainDesc.BufferDesc.Format,
+            swapChainDesc.Flags
+        ));
+        spdlog::debug(
+            "resized buffers in swap chain to ({},{})", this->clientWidth, this->clientHeight
+        );
 
         this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
         this->updateRenderTargetViews(this->rtvHeap);
 
-        this->viewport =
-            CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(this->clientWidth),
-                static_cast<float>(this->clientHeight));
+        this->viewport = CD3DX12_VIEWPORT(
+            0.0f, 0.0f, static_cast<float>(this->clientWidth),
+            static_cast<float>(this->clientHeight)
+        );
         this->resizeDepthBuffer(this->clientWidth, this->clientHeight);
 
         this->flush();

@@ -1,14 +1,12 @@
 #include <input.hpp>
 #include <window.hpp>
 
-_Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance,
-    HINSTANCE,
-    LPSTR,
-    int nCmdShow) {
+// NOLINTNEXTLINE(readability-inconsistent-declaration-parameter-name)
+_Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
+{
     setupLogging();
 
-    Window::get()->initialize(
-        hInstance, "D3D12 Experiment", 1280, 720, nCmdShow);
+    Window::get()->initialize(hInstance, "D3D12 Experiment", 1280, 720, nCmdShow);
     Application app;
 
     // Input map just to show example for closing window with escape
@@ -18,8 +16,7 @@ _Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance,
     ::UpdateWindow(Window::get()->hWnd);
 
     MSG msg = {};
-    while (
-        ::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) && msg.message != WM_QUIT) {
+    while (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) != 0 && msg.message != WM_QUIT) {
         ::TranslateMessage(&msg);
         ::DispatchMessage(&msg);
         inputManager.HandleMessage(msg);

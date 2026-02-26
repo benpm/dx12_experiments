@@ -1,37 +1,40 @@
 #include <descriptor_allocator.hpp>
 #include <window.hpp>
 
-DescriptorAllocation::DescriptorAllocation() {
+DescriptorAllocation::DescriptorAllocation()
+{
     this->handle.ptr = 0u;
 }
 
-DescriptorAllocation::DescriptorAllocation(D3D12_CPU_DESCRIPTOR_HANDLE handle,
+DescriptorAllocation::DescriptorAllocation(
+    D3D12_CPU_DESCRIPTOR_HANDLE handle,
     uint32_t numHandles,
     uint32_t descriptorSize,
-    std::shared_ptr<DescriptorAllocatorPage> page)
-    : handle(handle),
-      numHandles(numHandles),
-      descriptorSize(descriptorSize),
-      page(page) {}
+    std::shared_ptr<DescriptorAllocatorPage> page
+)
+    : handle(handle), numHandles(numHandles), descriptorSize(descriptorSize), page(page)
+{
+}
 
-DescriptorAllocation::~DescriptorAllocation() {
+DescriptorAllocation::~DescriptorAllocation()
+{
     this->free();
 }
 
-DescriptorAllocation::DescriptorAllocation(
-    DescriptorAllocation&& allocation) noexcept
+DescriptorAllocation::DescriptorAllocation(DescriptorAllocation&& allocation) noexcept
     : handle(allocation.handle),
       numHandles(allocation.numHandles),
       descriptorSize(allocation.descriptorSize),
-      page(std::move(allocation.page)) {
+      page(std::move(allocation.page))
+{
     allocation.handle.ptr = 0;
     allocation.numHandles = 0;
     allocation.descriptorSize = 0;
     allocation.page = nullptr;
 }
 
-DescriptorAllocation& DescriptorAllocation::operator=(
-    DescriptorAllocation&& other) noexcept {
+DescriptorAllocation& DescriptorAllocation::operator=(DescriptorAllocation&& other) noexcept
+{
     if (this != &other) {
         this->free();
         this->handle = other.handle;
@@ -46,27 +49,30 @@ DescriptorAllocation& DescriptorAllocation::operator=(
     return *this;
 }
 
-bool DescriptorAllocation::isNull() const {
+bool DescriptorAllocation::isNull() const
+{
     return this->handle.ptr == 0;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE DescriptorAllocation::getDescHandle(
-    uint32_t offset) const {
+D3D12_CPU_DESCRIPTOR_HANDLE DescriptorAllocation::getDescHandle(uint32_t offset) const
+{
     assert(offset < this->numHandles && "Offset out of range");
-    return {this->handle.ptr + (offset * this->descriptorSize)};
+    return { this->handle.ptr + (offset * this->descriptorSize) };
 }
 
-uint32_t DescriptorAllocation::getNumHandles() const {
+uint32_t DescriptorAllocation::getNumHandles() const
+{
     return this->numHandles;
 }
 
-void DescriptorAllocation::free() {
+void DescriptorAllocation::free()
+{
     if (!this->isNull() && this->page != nullptr) {
         this->page->free(std::move(*this), Application::nBuffers);
-
-        this->handle.ptr = 0;
-        this->numHandles = 0;
-        this->descriptorSize = 0;
-        this->page.reset();
     }
+}
+
+void DescriptorAllocatorPage::free(DescriptorAllocation&& /*allocation*/, uint64_t /*frameNumber*/)
+{
+    // TODO: Implement free-list based deallocation
 }

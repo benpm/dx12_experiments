@@ -3,7 +3,8 @@
 #include <gainput/gainput.h>
 #include <common.hpp>
 
-enum class Key : UINT {
+enum class Key : UINT
+{
     A = (UINT)('A'),
     B = (UINT)('B'),
     C = (UINT)('C'),
@@ -116,23 +117,32 @@ enum class Key : UINT {
     NumLock = VK_NUMLOCK,
     ScrollLock = VK_SCROLL
 };
-enum class MouseButton { Left, Right, Middle, XButton1, XButton2 };
-namespace Button {
-enum : gainput::UserButtonId {
-    MoveForward,
-    MoveBackward,
-    MoveLeft,
-    MoveRight,
-    LeftClick,
-    RightClick,
-    AxisX,
-    AxisY,
-    AxisDeltaX,
-    AxisDeltaY,
-    Exit,
-    ScrollUp,
-    ScrollDown,
+enum class MouseButton
+{
+    Left,
+    Right,
+    Middle,
+    XButton1,
+    XButton2
 };
+namespace Button
+{
+    enum : gainput::UserButtonId
+    {
+        MoveForward,
+        MoveBackward,
+        MoveLeft,
+        MoveRight,
+        LeftClick,
+        RightClick,
+        AxisX,
+        AxisY,
+        AxisDeltaX,
+        AxisDeltaY,
+        Exit,
+        ScrollUp,
+        ScrollDown,
+    };
 }
 
 extern gainput::InputManager inputManager;

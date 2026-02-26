@@ -3,7 +3,8 @@
 #include <gainput/gainput.h>
 #include <application.hpp>
 
-class Window {
+class Window
+{
    public:
     ComPtr<ID3D12Device2> device;
     HWND hWnd;
@@ -14,13 +15,16 @@ class Window {
     bool doExit = false;
 
     void registerApp(Application* app);
-    void initialize(HINSTANCE hInstance,
+    void initialize(
+        HINSTANCE hInstance,
         const std::string& title,
         uint32_t width,
         uint32_t height,
-        int nCmdShow);
+        int nCmdShow
+    );
 
-    static Window* get() {
+    static Window* get()
+    {
         static Window window{};
         return &window;
     }

@@ -1,8 +1,8 @@
 #include <command_queue.hpp>
 
-CommandQueue::CommandQueue(ComPtr<ID3D12Device2> device,
-    D3D12_COMMAND_LIST_TYPE type)
-    : fenceValue(0), device(device), type(type) {
+CommandQueue::CommandQueue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type)
+    : fenceValue(0), device(device), type(type)
+{
     D3D12_COMMAND_QUEUE_DESC desc = {};
     desc.Type = type;
     desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
@@ -10,15 +10,15 @@ CommandQueue::CommandQueue(ComPtr<ID3D12Device2> device,
     desc.NodeMask = 0;
 
     chkDX(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&this->queue)));
-    chkDX(device->CreateFence(
-        this->fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence)));
+    chkDX(device->CreateFence(this->fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence)));
     this->fenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
     assert(this->fenceEvent && "Failed to create fence event handle.");
 }
 
 // Get or create a commandlist, using next available command allocator
-ComPtr<ID3D12GraphicsCommandList2> CommandQueue::getCmdList() {
+ComPtr<ID3D12GraphicsCommandList2> CommandQueue::getCmdList()
+{
     ComPtr<ID3D12GraphicsCommandList2> commandList;
     ComPtr<ID3D12CommandAllocator> commandAllocator = this->createCmdAlloc();
 
@@ -32,26 +32,27 @@ ComPtr<ID3D12GraphicsCommandList2> CommandQueue::getCmdList() {
 
     // Assign allocator to command list
     chkDX(commandList->SetPrivateDataInterface(
-        __uuidof(ID3D12CommandAllocator), commandAllocator.Get()));
+        __uuidof(ID3D12CommandAllocator), commandAllocator.Get()
+    ));
 
     return commandList;
 }
 
-uint64_t CommandQueue::execCmdList(ComPtr<ID3D12GraphicsCommandList2> cmdList) {
+uint64_t CommandQueue::execCmdList(ComPtr<ID3D12GraphicsCommandList2> cmdList)
+{
     chkDX(cmdList->Close());
 
     // Retrieve command allocator from private data of command list
     ID3D12CommandAllocator* commandAllocator;
     UINT dataSize = sizeof(commandAllocator);
-    chkDX(cmdList->GetPrivateData(
-        __uuidof(ID3D12CommandAllocator), &dataSize, &commandAllocator));
+    chkDX(cmdList->GetPrivateData(__uuidof(ID3D12CommandAllocator), &dataSize, &commandAllocator));
 
-    ID3D12CommandList* const commandLists[] = {cmdList.Get()};
+    ID3D12CommandList* const commandLists[] = { cmdList.Get() };
     this->queue->ExecuteCommandLists(_countof(commandLists), commandLists);
     uint64_t fenceVal = this->signal();
 
     // Push bach the allocator and list to their queues so they can be re-used
-    this->cmdAllocQueue.emplace(CmdAllocEntry{fenceVal, commandAllocator});
+    this->cmdAllocQueue.emplace(CmdAllocEntry{ fenceVal, commandAllocator });
     this->cmdListQueue.push(cmdList);
 
     // Release ownership of the command allocator
@@ -60,25 +61,29 @@ uint64_t CommandQueue::execCmdList(ComPtr<ID3D12GraphicsCommandList2> cmdList) {
     return fenceVal;
 }
 
-uint64_t CommandQueue::signal() {
+uint64_t CommandQueue::signal()
+{
     uint64_t fenceValueForSignal = ++fenceValue;
     chkDX(this->queue->Signal(fence.Get(), fenceValueForSignal));
 
     return fenceValueForSignal;
 }
 
-bool CommandQueue::isFenceComplete(uint64_t fval) {
+bool CommandQueue::isFenceComplete(uint64_t fval)
+{
     return (this->fence->GetCompletedValue() >= fval);
 }
 
-void CommandQueue::waitForFenceVal(uint64_t fval) {
+void CommandQueue::waitForFenceVal(uint64_t fval)
+{
     if (!this->isFenceComplete(fval)) {
         chkDX(fence->SetEventOnCompletion(fval, fenceEvent));
         WaitForSingleObject(fenceEvent, INFINITE);
     }
 }
 
-void CommandQueue::flush() {
+void CommandQueue::flush()
+{
     uint64_t fenceValueForSignal = this->signal();
     this->waitForFenceVal(fenceValueForSignal);
 }
@@ -86,7 +91,8 @@ void CommandQueue::flush() {
 // Command allocator can't be re-used unless associated cmd list's commands
 //  have finished on the GPU (i.e. entry's fence value is greater than the
 //  current fence value)
-ComPtr<ID3D12CommandAllocator> CommandQueue::createCmdAlloc() {
+ComPtr<ID3D12CommandAllocator> CommandQueue::createCmdAlloc()
+{
     ComPtr<ID3D12CommandAllocator> allocator;
 
     if (this->cmdAllocQueue.size() > 0 &&
@@ -95,18 +101,20 @@ ComPtr<ID3D12CommandAllocator> CommandQueue::createCmdAlloc() {
         chkDX(allocator->Reset());
         this->cmdAllocQueue.pop();
     } else {
-        chkDX(device->CreateCommandAllocator(
-            this->type, IID_PPV_ARGS(&allocator)));
+        chkDX(device->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator)));
     }
 
     return allocator;
 }
 
 ComPtr<ID3D12GraphicsCommandList2> CommandQueue::createCmdList(
-    ComPtr<ID3D12CommandAllocator> allocator) {
+    ComPtr<ID3D12CommandAllocator> allocator
+)
+{
     ComPtr<ID3D12GraphicsCommandList2> commandList;
     chkDX(device->CreateCommandList(
-        0, this->type, allocator.Get(), nullptr, IID_PPV_ARGS(&commandList)));
+        0, this->type, allocator.Get(), nullptr, IID_PPV_ARGS(&commandList)
+    ));
 
     return commandList;
 }

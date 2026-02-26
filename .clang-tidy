@@ -1,0 +1,23 @@
+Checks: >
+  -*,
+  bugprone-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-named-parameter,
+  -readability-uppercase-literal-suffix,
+  -bugprone-easily-swappable-parameters,
+  -modernize-avoid-c-arrays,
+  -modernize-use-nodiscard,
+  -modernize-use-designated-initializers
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: 'include/.*\.hpp$'
+
+CheckOptions:
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 50

@@ -6,12 +6,14 @@
 #include <input.hpp>
 #include <unordered_set>
 
-struct VertexPosColor {
+struct VertexPosColor
+{
     XMFLOAT3 position;
     XMFLOAT3 color;
 };
 
-class Application {
+class Application
+{
    public:
     // Number of swap chain back buffer
     constexpr static uint8_t nBuffers = 3u;
@@ -76,34 +78,42 @@ class Application {
     ~Application();
 
     // Transition a resource
-    void transitionResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
+    void transitionResource(
+        ComPtr<ID3D12GraphicsCommandList2> cmdList,
         ComPtr<ID3D12Resource> resource,
         D3D12_RESOURCE_STATES beforeState,
-        D3D12_RESOURCE_STATES afterState);
+        D3D12_RESOURCE_STATES afterState
+    );
     // Clear a render target view
-    void clearRTV(ComPtr<ID3D12GraphicsCommandList2> commandList,
+    void clearRTV(
+        ComPtr<ID3D12GraphicsCommandList2> cmdList,
         D3D12_CPU_DESCRIPTOR_HANDLE rtv,
-        FLOAT clearColor[4]);
+        FLOAT clearColor[4]
+    );
     // Clear the depth of a depth-stencil view
-    void clearDepth(ComPtr<ID3D12GraphicsCommandList2> commandList,
+    void clearDepth(
+        ComPtr<ID3D12GraphicsCommandList2> cmdList,
         D3D12_CPU_DESCRIPTOR_HANDLE dsv,
-        FLOAT depth = 1.0f);
+        FLOAT depth = 1.0f
+    );
     // Create buffer large enough for data, and upload buffer used to transfer
     // to GPU
-    void updateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
+    void updateBufferResource(
+        ComPtr<ID3D12GraphicsCommandList2> cmdList,
         ID3D12Resource** pDestinationResource,
         ID3D12Resource** pIntermediateResource,
         size_t numElements,
         size_t elementSize,
         const void* bufferData = nullptr,
-        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
+        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE
+    );
     // Resize the depth buffer to match the size of the client area
     void resizeDepthBuffer(uint32_t width, uint32_t height);
     // Create a swap chain
     ComPtr<IDXGISwapChain4> createSwapChain();
     // Create descriptor heap which describes the resources used in rendering
-    ComPtr<ID3D12DescriptorHeap> createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE type,
-        uint32_t numDescriptors);
+    ComPtr<ID3D12DescriptorHeap>
+    createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors);
     // Render target views describe a resource attached to bind slot during
     // output merge
     void updateRenderTargetViews(ComPtr<ID3D12DescriptorHeap> descriptorHeap);

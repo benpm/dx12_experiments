@@ -14,6 +14,10 @@ set(GAINPUT_BUILD_SHARED OFF)
 set(GAINPUT_TESTS OFF)
 set(GAINPUT_SAMPLES OFF)
 add_subdirectory(lib/gainput)
+target_compile_definitions(gainputstatic PRIVATE _CRT_SECURE_NO_WARNINGS)
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(gainputstatic PRIVATE -Wno-deprecated-declarations)
+endif()
 
 # -------------------------------
 # Find DXC shader compiler
@@ -111,7 +115,7 @@ target_compile_definitions(main PRIVATE
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_link_options(main PRIVATE "LINKER:/SUBSYSTEM:WINDOWS")
+    target_link_options(main PRIVATE "LINKER:/SUBSYSTEM:WINDOWS" "LINKER:/ignore:importeddllmain")
 else()
     target_link_options(main PRIVATE /SUBSYSTEM:WINDOWS)
 endif()

@@ -6,7 +6,14 @@
 #include <d3d12.h>
 #include <d3dcompiler.h>
 #include <dxgi1_6.h>
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wswitch"
+#endif
 #include "d3dx12.h"
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
 
 #include <shellapi.h>
 #include <wrl.h>

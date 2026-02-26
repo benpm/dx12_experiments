@@ -55,7 +55,7 @@ void regWinClass(HINSTANCE hInst, const wchar_t* windowClassName)
     windowClass.lpszClassName = windowClassName;
     windowClass.hIconSm = ::LoadIcon(hInst, NULL);
 
-    static ATOM atom = ::RegisterClassExW(&windowClass);
+    [[maybe_unused]] static ATOM atom = ::RegisterClassExW(&windowClass);
     assert(atom > 0);
 }
 

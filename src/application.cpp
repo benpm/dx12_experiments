@@ -256,19 +256,16 @@ void Application::updateRenderTargetViews(ComPtr<ID3D12DescriptorHeap> descripto
 
 void Application::update()
 {
-    static uint64_t frameCounter = 0;
-    static double elapsedSeconds = 0.0;
+    [[maybe_unused]] static double elapsedSeconds = 0.0;
     static std::chrono::high_resolution_clock clock;
     static auto t0 = clock.now();
 
     // Timing
-    frameCounter++;
     auto t1 = clock.now();
     auto deltaTime = t1 - t0;
     t0 = t1;
-    const double dt = deltaTime.count() * 1e-9;
+    [[maybe_unused]] const double dt = deltaTime.count() * 1e-9;
     elapsedSeconds += dt;
-    const float t = static_cast<float>(elapsedSeconds);
 
     const float w = static_cast<float>(this->clientWidth);
     const float h = static_cast<float>(this->clientHeight);

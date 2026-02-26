@@ -1,7 +1,7 @@
 #include <command_queue.hpp>
 
 CommandQueue::CommandQueue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type)
-    : fenceValue(0), device(device), type(type)
+    : device(device), fenceValue(0), type(type)
 {
     D3D12_COMMAND_QUEUE_DESC desc = {};
     desc.Type = type;

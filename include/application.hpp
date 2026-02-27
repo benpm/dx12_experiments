@@ -6,10 +6,21 @@
 #include <input.hpp>
 #include <unordered_set>
 
-struct VertexPosColor
+struct VertexPosNormalColor
 {
     XMFLOAT3 position;
+    XMFLOAT3 normal;
     XMFLOAT3 color;
+};
+
+struct SceneConstantBuffer
+{
+    XMMATRIX model;
+    XMMATRIX viewProj;
+    XMFLOAT4 cameraPos;
+    XMFLOAT4 lightPos;
+    XMFLOAT4 lightColor;
+    XMFLOAT4 ambientColor;
 };
 
 class Application

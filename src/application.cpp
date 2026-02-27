@@ -331,8 +331,20 @@ void Application::render()
         cmdList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
         // Update root params: MVP matrix into constant buffer for vert shader
-        const XMMATRIX mvpMatrix = this->matModel * this->cam.view() * this->cam.proj();
-        cmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
+        SceneConstantBuffer scb = {};
+        scb.model = this->matModel;
+        scb.viewProj = this->cam.view() * this->cam.proj();
+        
+        float camX = this->cam.radius * cos(this->cam.pitch) * cos(this->cam.yaw);
+        float camY = this->cam.radius * sin(this->cam.pitch);
+        float camZ = this->cam.radius * cos(this->cam.pitch) * sin(this->cam.yaw);
+        scb.cameraPos = XMFLOAT4(camX, camY, camZ, 1.0f);
+        
+        scb.lightPos = XMFLOAT4(10.0f, 15.0f, -10.0f, 1.0f);
+        scb.lightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+        scb.ambientColor = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+
+        cmdList->SetGraphicsRoot32BitConstants(0, sizeof(SceneConstantBuffer) / 4, &scb, 0);
 
         // Draw
         cmdList->DrawIndexedInstanced(this->numIndices, 1, 0, 0, 0);
@@ -470,17 +482,26 @@ bool Application::loadContent()
         spdlog::warn("tinyobjloader warn: {}", warn);
     }
 
-    std::vector<VertexPosColor> vertices;
+    std::vector<VertexPosNormalColor> vertices;
     std::vector<uint32_t> indices;
 
     for (const auto& shape : shapes) {
         for (const auto& index : shape.mesh.indices) {
-            VertexPosColor vertex{};
+            VertexPosNormalColor vertex{};
             vertex.position = {
                 attrib.vertices[3 * index.vertex_index + 0],
                 attrib.vertices[3 * index.vertex_index + 1],
                 attrib.vertices[3 * index.vertex_index + 2]
             };
+            if (index.normal_index >= 0) {
+                vertex.normal = {
+                    attrib.normals[3 * index.normal_index + 0],
+                    attrib.normals[3 * index.normal_index + 1],
+                    attrib.normals[3 * index.normal_index + 2]
+                };
+            } else {
+                vertex.normal = { 0.0f, 1.0f, 0.0f };
+            }
             // Set some default color
             vertex.color = { 0.8f, 0.8f, 0.8f };
             vertices.push_back(vertex);
@@ -494,13 +515,13 @@ bool Application::loadContent()
     ComPtr<ID3D12Resource> intermediateVertexBuffer;
     this->updateBufferResource(
         cmdList, &this->vertexBuffer, &intermediateVertexBuffer, vertices.size(),
-        sizeof(VertexPosColor), vertices.data()
+        sizeof(VertexPosNormalColor), vertices.data()
     );
 
     // Create the vertex buffer view
     this->vertexBufferView.BufferLocation = this->vertexBuffer->GetGPUVirtualAddress();
-    this->vertexBufferView.SizeInBytes = static_cast<UINT>(vertices.size() * sizeof(VertexPosColor));
-    this->vertexBufferView.StrideInBytes = sizeof(VertexPosColor);
+    this->vertexBufferView.SizeInBytes = static_cast<UINT>(vertices.size() * sizeof(VertexPosNormalColor));
+    this->vertexBufferView.StrideInBytes = sizeof(VertexPosNormalColor);
 
     spdlog::info("Uploading index buffer");
     // Upload index buffer data
@@ -528,6 +549,8 @@ bool Application::loadContent()
     D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
+          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
@@ -544,10 +567,9 @@ bool Application::loadContent()
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-        D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
     CD3DX12_ROOT_PARAMETER1 rootParams[1];
-    rootParams[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+    rootParams[0].InitAsConstants(sizeof(SceneConstantBuffer) / 4, 0, 0, D3D12_SHADER_VISIBILITY_ALL);
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSigDesc;
     rootSigDesc.Init_1_1(_countof(rootParams), rootParams, 0, nullptr, rootSigFlags);
 

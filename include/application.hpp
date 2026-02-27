@@ -69,6 +69,8 @@ class Application
     bool vsync = true;
     bool tearingSupported = false;
     bool fullscreen = false;
+    bool testMode = false;
+    int frameCount = 0;
 
     // Input
     gainput::InputMap inputMap;

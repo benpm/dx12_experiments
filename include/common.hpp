@@ -30,6 +30,7 @@ using namespace DirectX;
 inline void chkDX(HRESULT hr)
 {
     if (FAILED(hr)) {
+        spdlog::error("chkDX failed with HRESULT: {:#010x}", static_cast<uint32_t>(hr));
         throw std::exception();
     }
 }

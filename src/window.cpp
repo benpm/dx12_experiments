@@ -56,7 +56,10 @@ void regWinClass(HINSTANCE hInst, const wchar_t* windowClassName)
     windowClass.hIconSm = ::LoadIcon(hInst, NULL);
 
     [[maybe_unused]] static ATOM atom = ::RegisterClassExW(&windowClass);
-    assert(atom > 0);
+    if (atom == 0) {
+        spdlog::error("Failed to register window class! Error: {}", GetLastError());
+        throw std::exception();
+    }
 }
 
 void enableDebugging()
@@ -99,7 +102,10 @@ HWND makeWindow(
         windowHeight, NULL, NULL, hInst, nullptr
     );
 
-    assert(hWnd && "Failed to create window");
+    if (!hWnd) {
+        spdlog::error("Failed to create window! Error: {}", GetLastError());
+        throw std::exception();
+    }
 
     return hWnd;
 }
@@ -153,9 +159,10 @@ ComPtr<ID3D12Device2> createDevice(ComPtr<IDXGIAdapter4> adapter)
 #if defined(_DEBUG)
     ComPtr<ID3D12InfoQueue> pInfoQueue;
     if (SUCCEEDED(d3d12Device2.As(&pInfoQueue))) {
-        pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-        pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-        pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+        // Disable hard breaks so we can see the errors in the log instead of silently aborting
+        pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, FALSE);
+        pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, FALSE);
+        pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, FALSE);
         // Suppress whole categories of messages
         // D3D12_MESSAGE_CATEGORY Categories[] = {};
 
@@ -224,7 +231,8 @@ void Window::initialize(
     const std::string& title,
     uint32_t w,
     uint32_t h,
-    int nCmdShow
+    int nCmdShow,
+    bool useWarp
 )
 {
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -239,7 +247,7 @@ void Window::initialize(
     this->hWnd = makeWindow(windowClassName, hInstance, wTitle.c_str(), w, h);
     GetWindowRect(this->hWnd, &this->windowRect);
 
-    this->device = createDevice(getAdapter(false));
+    this->device = createDevice(getAdapter(useWarp));
     this->width = w;
     this->height = h;
 }

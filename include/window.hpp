@@ -20,7 +20,8 @@ class Window
         const std::string& title,
         uint32_t width,
         uint32_t height,
-        int nCmdShow
+        int nCmdShow,
+        bool useWarp = false
     );
 
     static Window* get()

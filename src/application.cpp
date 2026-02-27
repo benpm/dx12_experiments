@@ -1,5 +1,7 @@
 #include <application.hpp>
 #include <window.hpp>
+#include <ScreenGrab.h>
+#include <wincodec.h>
 
 constexpr VertexPosColor cubeVerts[8] = {
     { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) },  // 0
@@ -22,12 +24,11 @@ constexpr WORD cubeIndices[36] = {
 
 Application::Application() : inputMap(inputManager, "input_map")
 {
+    spdlog::info("Application constructor start");
     Window::get()->registerApp(this);
 
     if (!XMVerifyCPUSupport()) {
-        MessageBoxA(
-            nullptr, "Failed to verify DirectX Math library support.", "Error", MB_OK | MB_ICONERROR
-        );
+        spdlog::error("Failed to verify DirectX Math library support.");
         std::exit(EXIT_FAILURE);
     }
 
@@ -35,18 +36,22 @@ Application::Application() : inputMap(inputManager, "input_map")
         0.0f, 0.0f, static_cast<float>(this->clientWidth), static_cast<float>(this->clientHeight)
     );
 
+    spdlog::info("Creating CommandQueue");
     this->cmdQueue = CommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
+    spdlog::info("Creating SwapChain");
     this->swapChain = this->createSwapChain();
 
     this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
+    spdlog::info("Creating rtvHeap");
     this->rtvHeap = this->createDescHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, this->nBuffers);
     this->rtvDescSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+    spdlog::info("updateRenderTargetViews");
     this->updateRenderTargetViews(this->rtvHeap);
 
-    // Setup gainput
+    spdlog::info("Setup gainput");
     this->keyboardID = inputManager.CreateDevice<gainput::InputDeviceKeyboard>();
     this->mouseID = inputManager.CreateDevice<gainput::InputDeviceMouse>();
     this->rawMouseID = inputManager.CreateDevice<gainput::InputDeviceMouse>(
@@ -352,6 +357,25 @@ void Application::render()
         this->curBackBufIdx = this->swapChain->GetCurrentBackBufferIndex();
 
         this->cmdQueue.waitForFenceVal(this->frameFenceValues[this->curBackBufIdx]);
+
+        if (this->testMode) {
+            this->frameCount++;
+            if (this->frameCount >= 10) {
+                spdlog::info("Saving screenshot and exiting...");
+                HRESULT hr = DirectX::SaveWICTextureToFile(
+                    this->cmdQueue.queue.Get(),
+                    backBuffer.Get(),
+                    GUID_ContainerFormatPng,
+                    L"screenshot.png",
+                    D3D12_RESOURCE_STATE_PRESENT,
+                    D3D12_RESOURCE_STATE_PRESENT
+                );
+                if (FAILED(hr)) {
+                    spdlog::error("Failed to save screenshot! HRESULT: {:#010x}", static_cast<uint32_t>(hr));
+                }
+                Window::get()->doExit = true;
+            }
+        }
     }
 }
 
@@ -408,8 +432,10 @@ void Application::flush()
 
 bool Application::loadContent()
 {
+    spdlog::info("loadContent start");
     auto cmdList = this->cmdQueue.getCmdList();
 
+    spdlog::info("Uploading vertex buffer");
     // Upload vertex buffer data
     ComPtr<ID3D12Resource> intermediateVertexBuffer;
     this->updateBufferResource(
@@ -422,6 +448,7 @@ bool Application::loadContent()
     this->vertexBufferView.SizeInBytes = sizeof(cubeVerts);
     this->vertexBufferView.StrideInBytes = sizeof(VertexPosColor);
 
+    spdlog::info("Uploading index buffer");
     // Upload index buffer data
     ComPtr<ID3D12Resource> intermediateIndexBuffer;
     this->updateBufferResource(
@@ -434,6 +461,7 @@ bool Application::loadContent()
     this->indexBufferView.Format = DXGI_FORMAT_R16_UINT;
     this->indexBufferView.SizeInBytes = sizeof(cubeIndices);
 
+    spdlog::info("Creating dsvHeap");
     // Create the descriptor heap for the depth-stencil view
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
     dsvHeapDesc.NumDescriptors = 1;
@@ -441,12 +469,13 @@ bool Application::loadContent()
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     chkDX(this->device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&this->dsvHeap)));
 
+    spdlog::info("Loading pre-compiled shaders");
     // Load pre-compiled shaders
     ComPtr<ID3DBlob> vertexShader, pixelShader;
     chkDX(D3DReadFileToBlob(L"vertex_shader.cso", &vertexShader));
     chkDX(D3DReadFileToBlob(L"pixel_shader.cso", &pixelShader));
 
-    // Create the vertex input layout which describes the way the vertex buffer
+    spdlog::info("Creating vertex input layout");
     // is structured
     D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,

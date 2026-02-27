@@ -29,6 +29,9 @@ Index:
   Background: Build
   StandardLibrary: true
 
+InlayHints:
+  Enabled: false
+
 ---
 If:
   PathMatch: .*/(external|third_party|submodules|build)/.*

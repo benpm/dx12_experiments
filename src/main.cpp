@@ -55,17 +55,19 @@ _Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR,
                 ::DispatchMessage(&msg);
                 inputManager.HandleMessage(msg);
             } else {
+                if (Window::get()->doExit) {
+                    spdlog::debug("exit requested");
+                    ::PostQuitMessage(0);
+                    Window::get()->doExit = false;
+                    break;
+                }
+
                 inputManager.Update();
                 app.update();
                 app.render();
 
                 if (app.inputMap.GetBoolWasDown(Button::Exit)) {
                     Window::get()->doExit = true;
-                }
-                if (Window::get()->doExit) {
-                    spdlog::debug("exit requested");
-                    ::PostQuitMessage(0);
-                    Window::get()->doExit = false;
                 }
             }
         }

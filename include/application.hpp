@@ -62,6 +62,7 @@ class Application
     mat4 matModel;
     OrbitCamera cam;
     bool contentLoaded = false;
+    uint32_t numIndices = 0;
 
     // Synchronization objects
     uint64_t frameFenceValues[nBuffers] = {};

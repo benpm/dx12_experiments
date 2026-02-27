@@ -1,5 +1,7 @@
 #include <cstdio>
 #include <logging.hpp>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 void setupLogging()
 {
@@ -11,7 +13,7 @@ void setupLogging()
     }
 
     // Logger setup
-    auto stderrSink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
+    auto stderrSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log.txt", true);
     auto errSink = std::make_shared<spdlog::sinks::error_proxy_sink_mt>(stderrSink);
     auto formatter = std::make_unique<spdlog::pattern_formatter>();

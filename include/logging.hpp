@@ -7,8 +7,6 @@
 
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/base_sink.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
 #include <spdlog/details/log_msg.h>

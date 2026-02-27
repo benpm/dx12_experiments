@@ -2,25 +2,22 @@
 #include <window.hpp>
 #include <ScreenGrab.h>
 #include <wincodec.h>
+#include <tiny_obj_loader.h>
+#include <sstream>
+#include "resource.h"
+#include "vertex_shader_cso.h"
+#include "pixel_shader_cso.h"
 
-constexpr VertexPosColor cubeVerts[8] = {
-    { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) },  // 0
-    { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },   // 1
-    { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) },    // 2
-    { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },   // 3
-    { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },   // 4
-    { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) },    // 5
-    { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) },     // 6
-    { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }     // 7
-};
-constexpr WORD cubeIndices[36] = {
-    0, 1, 2, 0, 2, 3,  // -z
-    4, 6, 5, 4, 7, 6,  // +z
-    4, 5, 1, 4, 1, 0,  // -x
-    3, 2, 6, 3, 6, 7,  // +x
-    1, 5, 6, 1, 6, 2,  // +y
-    4, 0, 3, 4, 3, 7   // -y
-};
+static std::string GetResourceString(int resourceId) {
+    HRSRC hRes = FindResource(nullptr, MAKEINTRESOURCE(resourceId), RT_RCDATA);
+    if (!hRes) return "";
+    HGLOBAL hMem = LoadResource(nullptr, hRes);
+    if (!hMem) return "";
+    DWORD size = SizeofResource(nullptr, hRes);
+    void* data = LockResource(hMem);
+    if (!data) return "";
+    return std::string(static_cast<const char*>(data), size);
+}
 
 Application::Application() : inputMap(inputManager, "input_map")
 {
@@ -338,7 +335,7 @@ void Application::render()
         cmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
 
         // Draw
-        cmdList->DrawIndexedInstanced(_countof(cubeIndices), 1, 0, 0, 0);
+        cmdList->DrawIndexedInstanced(this->numIndices, 1, 0, 0, 0);
     }
 
     // Present
@@ -360,7 +357,7 @@ void Application::render()
 
         if (this->testMode) {
             this->frameCount++;
-            if (this->frameCount >= 10) {
+            if (this->frameCount == 10) {
                 spdlog::info("Saving screenshot and exiting...");
                 HRESULT hr = DirectX::SaveWICTextureToFile(
                     this->cmdQueue.queue.Get(),
@@ -435,31 +432,88 @@ bool Application::loadContent()
     spdlog::info("loadContent start");
     auto cmdList = this->cmdQueue.getCmdList();
 
+    std::string objData = GetResourceString(IDR_TEAPOT_OBJ);
+    if (objData.empty()) {
+        spdlog::error("Failed to load obj from resource");
+        return false;
+    }
+    std::istringstream objStream(objData);
+
+    class ResourceMaterialReader : public tinyobj::MaterialReader {
+    public:
+        bool operator()(const std::string& matId,
+                        std::vector<tinyobj::material_t>* materials,
+                        std::map<std::string, int>* matMap,
+                        std::string* warn,
+                        std::string* err) override {
+            std::string mtlData = GetResourceString(IDR_TEAPOT_MTL);
+            if (mtlData.empty()) {
+                if (warn) *warn = "Material resource not found";
+                return false;
+            }
+            std::istringstream mtlStream(mtlData);
+            tinyobj::LoadMtl(matMap, materials, &mtlStream, warn, err);
+            return true;
+        }
+    };
+    ResourceMaterialReader matReader;
+
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, &objStream, &matReader)) {
+        spdlog::error("Failed to load obj: {}", err);
+        return false;
+    }
+    if (!warn.empty()) {
+        spdlog::warn("tinyobjloader warn: {}", warn);
+    }
+
+    std::vector<VertexPosColor> vertices;
+    std::vector<uint32_t> indices;
+
+    for (const auto& shape : shapes) {
+        for (const auto& index : shape.mesh.indices) {
+            VertexPosColor vertex{};
+            vertex.position = {
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
+            };
+            // Set some default color
+            vertex.color = { 0.8f, 0.8f, 0.8f };
+            vertices.push_back(vertex);
+            indices.push_back(static_cast<uint32_t>(indices.size()));
+        }
+    }
+    this->numIndices = static_cast<uint32_t>(indices.size());
+
     spdlog::info("Uploading vertex buffer");
     // Upload vertex buffer data
     ComPtr<ID3D12Resource> intermediateVertexBuffer;
     this->updateBufferResource(
-        cmdList, &this->vertexBuffer, &intermediateVertexBuffer, _countof(cubeVerts),
-        sizeof(VertexPosColor), cubeVerts
+        cmdList, &this->vertexBuffer, &intermediateVertexBuffer, vertices.size(),
+        sizeof(VertexPosColor), vertices.data()
     );
 
     // Create the vertex buffer view
     this->vertexBufferView.BufferLocation = this->vertexBuffer->GetGPUVirtualAddress();
-    this->vertexBufferView.SizeInBytes = sizeof(cubeVerts);
+    this->vertexBufferView.SizeInBytes = static_cast<UINT>(vertices.size() * sizeof(VertexPosColor));
     this->vertexBufferView.StrideInBytes = sizeof(VertexPosColor);
 
     spdlog::info("Uploading index buffer");
     // Upload index buffer data
     ComPtr<ID3D12Resource> intermediateIndexBuffer;
     this->updateBufferResource(
-        cmdList, &this->indexBuffer, &intermediateIndexBuffer, _countof(cubeIndices), sizeof(WORD),
-        cubeIndices
+        cmdList, &this->indexBuffer, &intermediateIndexBuffer, indices.size(), sizeof(uint32_t),
+        indices.data()
     );
 
     // Create the index buffer view
     this->indexBufferView.BufferLocation = this->indexBuffer->GetGPUVirtualAddress();
-    this->indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-    this->indexBufferView.SizeInBytes = sizeof(cubeIndices);
+    this->indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+    this->indexBufferView.SizeInBytes = static_cast<UINT>(indices.size() * sizeof(uint32_t));
 
     spdlog::info("Creating dsvHeap");
     // Create the descriptor heap for the depth-stencil view
@@ -468,12 +522,6 @@ bool Application::loadContent()
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     chkDX(this->device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&this->dsvHeap)));
-
-    spdlog::info("Loading pre-compiled shaders");
-    // Load pre-compiled shaders
-    ComPtr<ID3DBlob> vertexShader, pixelShader;
-    chkDX(D3DReadFileToBlob(L"vertex_shader.cso", &vertexShader));
-    chkDX(D3DReadFileToBlob(L"pixel_shader.cso", &pixelShader));
 
     spdlog::info("Creating vertex input layout");
     // is structured
@@ -530,8 +578,8 @@ bool Application::loadContent()
     pipelineStateStream.pRootSignature = this->rootSignature.Get();
     pipelineStateStream.InputLayout = { inputLayout, _countof(inputLayout) };
     pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    pipelineStateStream.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
-    pipelineStateStream.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
+    pipelineStateStream.VS = CD3DX12_SHADER_BYTECODE(g_vertex_shader, sizeof(g_vertex_shader));
+    pipelineStateStream.PS = CD3DX12_SHADER_BYTECODE(g_pixel_shader, sizeof(g_pixel_shader));
     pipelineStateStream.DSVFormat = DXGI_FORMAT_D32_FLOAT;
     pipelineStateStream.RTVFormats = rtvFormats;
     D3D12_PIPELINE_STATE_STREAM_DESC psoDesc = { sizeof(PipelineStateStream),

@@ -13,6 +13,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 inputManager.Update();
                 app->update();
                 app->render();
+                ::ValidateRect(hwnd, nullptr);
                 break;
             case WM_SYSCHAR:
                 break;

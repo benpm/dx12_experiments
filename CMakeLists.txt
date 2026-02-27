@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.20)
 project(dx12_experiments LANGUAGES CXX C)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
+# Use static CRT for MSVC and Clang-cl (so no VCRUNTIME dlls are required)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 # -------------------------------
 # Dependencies
 # -------------------------------
@@ -19,6 +22,15 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(gainputstatic PRIVATE -Wno-deprecated-declarations)
 endif()
 
+# Fetch tinyobjloader
+include(FetchContent)
+FetchContent_Declare(
+    tinyobjloader
+    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+    GIT_TAG        afdd3fa785ac556d12e2e0d99f3bbf6239ab5f31
+)
+FetchContent_MakeAvailable(tinyobjloader)
+
 # -------------------------------
 # Find DXC shader compiler
 # -------------------------------
@@ -31,16 +43,16 @@ if(NOT DXC_EXECUTABLE)
 endif()
 message(STATUS "Found DXC: ${DXC_EXECUTABLE}")
 
-# Compile HLSL shaders to .cso
-function(compile_shader SHADER_FILE SHADER_TYPE SHADER_MODEL OUTPUT_VAR)
+# Compile HLSL shaders to .h
+function(compile_shader SHADER_FILE SHADER_TYPE SHADER_MODEL OUTPUT_VAR VAR_NAME)
     get_filename_component(SHADER_NAME ${SHADER_FILE} NAME_WE)
-    set(OUTPUT_FILE "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>/${SHADER_NAME}.cso")
+    set(OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/${SHADER_NAME}_cso.h")
     add_custom_command(
         OUTPUT ${OUTPUT_FILE}
         COMMAND ${DXC_EXECUTABLE} -T ${SHADER_TYPE}_${SHADER_MODEL} -E main
-            -Fo ${OUTPUT_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_FILE}
+            -Fh ${OUTPUT_FILE} -Vn ${VAR_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_FILE}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_FILE}
-        COMMENT "Compiling ${SHADER_FILE} -> ${SHADER_NAME}.cso"
+        COMMENT "Compiling ${SHADER_FILE} -> ${SHADER_NAME}_cso.h"
         VERBATIM
     )
     set(${OUTPUT_VAR} ${OUTPUT_FILE} PARENT_SCOPE)
@@ -59,6 +71,7 @@ add_executable(main
     src/input.cpp
     src/upload_buffer.cpp
     src/descriptor_allocator.cpp
+    resources.rc
 )
 target_compile_features(main PRIVATE cxx_std_23)
 target_include_directories(main PRIVATE ${CMAKE_SOURCE_DIR}/include)
@@ -66,15 +79,15 @@ target_include_directories(main PRIVATE ${CMAKE_SOURCE_DIR}/include)
 # -------------------------------
 # Shader compilation
 # -------------------------------
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-compile_shader(src/vertex_shader.hlsl vs 6_0 VS_CSO)
-compile_shader(src/pixel_shader.hlsl ps 6_0 PS_CSO)
-add_custom_target(shaders DEPENDS ${VS_CSO} ${PS_CSO})
+compile_shader(src/vertex_shader.hlsl vs 6_0 VS_HDR g_vertex_shader)
+compile_shader(src/pixel_shader.hlsl ps 6_0 PS_HDR g_pixel_shader)
+add_custom_target(shaders DEPENDS ${VS_HDR} ${PS_HDR})
 add_dependencies(main shaders)
 
 # -------------------------------
 # Compiler options (base + per-config)
 # -------------------------------
+target_include_directories(main PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang")
     message(STATUS "Clang detected, configuring compile flags")
     target_compile_options(main PRIVATE
@@ -87,9 +100,9 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     message(STATUS "MSVC detected, configuring compile flags")
     target_compile_options(main PRIVATE
         /W3
-        $<$<CONFIG:Debug>:/Od /Zi /MDd>
-        $<$<CONFIG:Release>:/O2 /MD>
-        $<$<CONFIG:RelWithDebInfo>:/O2 /Zi /MD>
+        $<$<CONFIG:Debug>:/Od /Zi>
+        $<$<CONFIG:Release>:/O2>
+        $<$<CONFIG:RelWithDebInfo>:/O2 /Zi>
     )
 else()
     message(WARNING "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
@@ -130,4 +143,5 @@ target_link_libraries(main PRIVATE
     Microsoft::DirectXTK12
     spdlog::spdlog
     gainputstatic
+    tinyobjloader
 )

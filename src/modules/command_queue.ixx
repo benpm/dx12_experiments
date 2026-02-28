@@ -1,9 +1,15 @@
-#pragma once
+module;
 
-#include <common.hpp>
+#include <Windows.h>
+#include <d3d12.h>
+#include <wrl.h>
 #include <queue>
 
-class CommandQueue
+export module command_queue;
+
+export import common;
+
+export class CommandQueue
 {
    public:
     ComPtr<ID3D12CommandQueue> queue;

@@ -1,13 +1,23 @@
-#include <input.hpp>
-#include <window.hpp>
+#if defined(__clang__)
+    #define FMT_CONSTEVAL
+#endif
+
+#include <Windows.h>
+#include <gainput/gainput.h>
 #include <shellapi.h>
 #include <objbase.h>
+#include <spdlog/spdlog.h>
+
+import application;
+import input;
+import logging;
+import window;
 
 // NOLINTNEXTLINE(readability-inconsistent-declaration-parameter-name)
 _Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 {
     setupLogging();
-    
+
     // Initialize COM for WIC (required for saving screenshots)
     if (FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED))) {
         spdlog::error("Failed to initialize COM");
@@ -24,7 +34,7 @@ _Use_decl_annotations_ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR,
         for (int i = 0; i < argc; ++i) {
             if (wcscmp(argv[i], L"--test") == 0) {
                 testMode = true;
-                useWarp = true; // Use WARP in test mode for headless environments
+                useWarp = true;  // Use WARP in test mode for headless environments
                 spdlog::info("Running in test mode");
             }
         }

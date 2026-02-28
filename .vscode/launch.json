@@ -5,21 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C++ Launch",
-            "type": "cppvsdbg",
+            "name": "LLDB Debug",
+            "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/main.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/Debug",
-            "environment": [],
+            "args": [ ],
+            "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "internalConsoleOptions": "openOnSessionStart",
-            "logging": {
-                "moduleLoad": false,
-                "engineLogging": false
-            },
-            "preLaunchTask": "CMake: build"
+            "preLaunchTask": "Build Debug"
         }
     ]
 }

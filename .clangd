@@ -9,7 +9,7 @@ CompileFlags:
     - -Ibuild/Debug
     - -Iinclude
     - src/pch.hpp
-    - -std=c++20
+    - -std=c++23
 
 Diagnostics:
   Includes:

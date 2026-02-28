@@ -1,5 +1,14 @@
-#include <descriptor_allocator.hpp>
-#include <window.hpp>
+module;
+
+#include <d3d12.h>
+#include <cassert>
+#include <cstdint>
+#include <memory>
+#include <utility>
+
+module descriptor_allocator;
+
+import application;
 
 DescriptorAllocation::DescriptorAllocation()
 {

@@ -1,5 +1,13 @@
-#include <upload_buffer.hpp>
-#include <window.hpp>
+module;
+
+#include <d3d12.h>
+#include <wrl.h>
+#include <new>
+#include "d3dx12.h"
+
+module upload_buffer;
+
+import window;
 
 UploadBuffer::UploadBuffer(size_t pageSize) : pageSize(pageSize) {}
 

@@ -1,21 +1,47 @@
-#include <application.hpp>
-#include <window.hpp>
+module;
+
+#if defined(__clang__)
+    #define FMT_CONSTEVAL
+#endif
+
+#include <Windows.h>
+#include <DirectXMath.h>
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <wrl.h>
+#include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <gainput/gainput.h>
 #include <ScreenGrab.h>
 #include <wincodec.h>
 #include <tiny_obj_loader.h>
 #include <sstream>
+#include <spdlog/spdlog.h>
+#include "d3dx12.h"
 #include "resource.h"
 #include "vertex_shader_cso.h"
 #include "pixel_shader_cso.h"
 
-static std::string GetResourceString(int resourceId) {
+module application;
+
+import window;
+
+static std::string GetResourceString(int resourceId)
+{
     HRSRC hRes = FindResource(nullptr, MAKEINTRESOURCE(resourceId), RT_RCDATA);
-    if (!hRes) return "";
+    if (!hRes) {
+        return "";
+    }
     HGLOBAL hMem = LoadResource(nullptr, hRes);
-    if (!hMem) return "";
+    if (!hMem) {
+        return "";
+    }
     DWORD size = SizeofResource(nullptr, hRes);
     void* data = LockResource(hMem);
-    if (!data) return "";
+    if (!data) {
+        return "";
+    }
     return std::string(static_cast<const char*>(data), size);
 }
 
@@ -334,12 +360,12 @@ void Application::render()
         SceneConstantBuffer scb = {};
         scb.model = this->matModel;
         scb.viewProj = this->cam.view() * this->cam.proj();
-        
+
         float camX = this->cam.radius * cos(this->cam.pitch) * cos(this->cam.yaw);
         float camY = this->cam.radius * sin(this->cam.pitch);
         float camZ = this->cam.radius * cos(this->cam.pitch) * sin(this->cam.yaw);
         scb.cameraPos = XMFLOAT4(camX, camY, camZ, 1.0f);
-        
+
         scb.lightPos = XMFLOAT4(10.0f, 15.0f, -10.0f, 1.0f);
         scb.lightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
         scb.ambientColor = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
@@ -372,15 +398,13 @@ void Application::render()
             if (this->frameCount == 10) {
                 spdlog::info("Saving screenshot and exiting...");
                 HRESULT hr = DirectX::SaveWICTextureToFile(
-                    this->cmdQueue.queue.Get(),
-                    backBuffer.Get(),
-                    GUID_ContainerFormatPng,
-                    L"screenshot.png",
-                    D3D12_RESOURCE_STATE_PRESENT,
-                    D3D12_RESOURCE_STATE_PRESENT
+                    this->cmdQueue.queue.Get(), backBuffer.Get(), GUID_ContainerFormatPng,
+                    L"screenshot.png", D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PRESENT
                 );
                 if (FAILED(hr)) {
-                    spdlog::error("Failed to save screenshot! HRESULT: {:#010x}", static_cast<uint32_t>(hr));
+                    spdlog::error(
+                        "Failed to save screenshot! HRESULT: {:#010x}", static_cast<uint32_t>(hr)
+                    );
                 }
                 Window::get()->doExit = true;
             }
@@ -451,16 +475,22 @@ bool Application::loadContent()
     }
     std::istringstream objStream(objData);
 
-    class ResourceMaterialReader : public tinyobj::MaterialReader {
-    public:
-        bool operator()(const std::string& matId,
-                        std::vector<tinyobj::material_t>* materials,
-                        std::map<std::string, int>* matMap,
-                        std::string* warn,
-                        std::string* err) override {
+    class ResourceMaterialReader : public tinyobj::MaterialReader
+    {
+       public:
+        bool operator()(
+            const std::string& matId,
+            std::vector<tinyobj::material_t>* materials,
+            std::map<std::string, int>* matMap,
+            std::string* warn,
+            std::string* err
+        ) override
+        {
             std::string mtlData = GetResourceString(IDR_TEAPOT_MTL);
             if (mtlData.empty()) {
-                if (warn) *warn = "Material resource not found";
+                if (warn) {
+                    *warn = "Material resource not found";
+                }
                 return false;
             }
             std::istringstream mtlStream(mtlData);
@@ -488,17 +518,13 @@ bool Application::loadContent()
     for (const auto& shape : shapes) {
         for (const auto& index : shape.mesh.indices) {
             VertexPosNormalColor vertex{};
-            vertex.position = {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
-            };
+            vertex.position = { attrib.vertices[3 * index.vertex_index + 0],
+                                attrib.vertices[3 * index.vertex_index + 1],
+                                attrib.vertices[3 * index.vertex_index + 2] };
             if (index.normal_index >= 0) {
-                vertex.normal = {
-                    attrib.normals[3 * index.normal_index + 0],
-                    attrib.normals[3 * index.normal_index + 1],
-                    attrib.normals[3 * index.normal_index + 2]
-                };
+                vertex.normal = { attrib.normals[3 * index.normal_index + 0],
+                                  attrib.normals[3 * index.normal_index + 1],
+                                  attrib.normals[3 * index.normal_index + 2] };
             } else {
                 vertex.normal = { 0.0f, 1.0f, 0.0f };
             }
@@ -520,7 +546,8 @@ bool Application::loadContent()
 
     // Create the vertex buffer view
     this->vertexBufferView.BufferLocation = this->vertexBuffer->GetGPUVirtualAddress();
-    this->vertexBufferView.SizeInBytes = static_cast<UINT>(vertices.size() * sizeof(VertexPosNormalColor));
+    this->vertexBufferView.SizeInBytes =
+        static_cast<UINT>(vertices.size() * sizeof(VertexPosNormalColor));
     this->vertexBufferView.StrideInBytes = sizeof(VertexPosNormalColor);
 
     spdlog::info("Uploading index buffer");
@@ -569,7 +596,9 @@ bool Application::loadContent()
         D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
     CD3DX12_ROOT_PARAMETER1 rootParams[1];
-    rootParams[0].InitAsConstants(sizeof(SceneConstantBuffer) / 4, 0, 0, D3D12_SHADER_VISIBILITY_ALL);
+    rootParams[0].InitAsConstants(
+        sizeof(SceneConstantBuffer) / 4, 0, 0, D3D12_SHADER_VISIBILITY_ALL
+    );
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSigDesc;
     rootSigDesc.Init_1_1(_countof(rootParams), rootParams, 0, nullptr, rootSigFlags);
 

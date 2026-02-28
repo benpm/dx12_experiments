@@ -1,10 +1,13 @@
-#pragma once
+module;
 
 #include <gainput/gainput.h>
-#include <common.hpp>
+#include <Windows.h>
 
-enum class Key : UINT
-{
+export module input;
+
+export import common;
+
+export enum class Key : UINT {
     A = (UINT)('A'),
     B = (UINT)('B'),
     C = (UINT)('C'),
@@ -117,15 +120,10 @@ enum class Key : UINT
     NumLock = VK_NUMLOCK,
     ScrollLock = VK_SCROLL
 };
-enum class MouseButton
-{
-    Left,
-    Right,
-    Middle,
-    XButton1,
-    XButton2
-};
-namespace Button
+
+export enum class MouseButton { Left, Right, Middle, XButton1, XButton2 };
+
+export namespace Button
 {
     enum : gainput::UserButtonId
     {
@@ -145,4 +143,4 @@ namespace Button
     };
 }
 
-extern gainput::InputManager inputManager;
+export extern gainput::InputManager inputManager;

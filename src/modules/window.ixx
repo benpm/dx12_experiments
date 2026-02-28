@@ -1,9 +1,16 @@
-#pragma once
+module;
 
-#include <gainput/gainput.h>
-#include <application.hpp>
+#include <Windows.h>
+#include <d3d12.h>
+#include <wrl.h>
+#include <string>
 
-class Window
+export module window;
+
+export import application;
+export import common;
+
+export class Window
 {
    public:
     ComPtr<ID3D12Device2> device;

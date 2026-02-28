@@ -1,7 +1,22 @@
+module;
+
+#if defined(__clang__)
+    #define FMT_CONSTEVAL
+#endif
+
+#include <Windows.h>
 #include <windowsx.h>
-#include <input.hpp>
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <wrl.h>
+#include <algorithm>
 #include <iostream>
-#include <window.hpp>
+#include <spdlog/spdlog.h>
+
+module window;
+
+import application;
+import input;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {

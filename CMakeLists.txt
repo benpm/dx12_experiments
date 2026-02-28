@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.28)
 project(dx12_experiments LANGUAGES CXX C)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
 # Use static CRT for MSVC and Clang-cl (so no VCRUNTIME dlls are required)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -27,7 +28,7 @@ include(FetchContent)
 FetchContent_Declare(
     tinyobjloader
     GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
-    GIT_TAG        afdd3fa785ac556d12e2e0d99f3bbf6239ab5f31
+    GIT_TAG afdd3fa785ac556d12e2e0d99f3bbf6239ab5f31
 )
 FetchContent_MakeAvailable(tinyobjloader)
 
@@ -36,7 +37,7 @@ FetchContent_MakeAvailable(tinyobjloader)
 # -------------------------------
 find_program(DXC_EXECUTABLE dxc
     HINTS "$ENV{WindowsSdkDir}/bin/$ENV{WindowsSDKVersion}/x64"
-          "C:/Program Files (x86)/Windows Kits/10/bin/10.0.26100.0/x64"
+    "C:/Program Files (x86)/Windows Kits/10/bin/10.0.26100.0/x64"
 )
 if(NOT DXC_EXECUTABLE)
     message(FATAL_ERROR "Could not find dxc.exe (DirectX Shader Compiler)")
@@ -50,7 +51,7 @@ function(compile_shader SHADER_FILE SHADER_TYPE SHADER_MODEL OUTPUT_VAR VAR_NAME
     add_custom_command(
         OUTPUT ${OUTPUT_FILE}
         COMMAND ${DXC_EXECUTABLE} -T ${SHADER_TYPE}_${SHADER_MODEL} -E main
-            -Fh ${OUTPUT_FILE} -Vn ${VAR_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_FILE}
+        -Fh ${OUTPUT_FILE} -Vn ${VAR_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_FILE}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_FILE}
         COMMENT "Compiling ${SHADER_FILE} -> ${SHADER_NAME}_cso.h"
         VERBATIM
@@ -73,7 +74,23 @@ add_executable(main
     src/descriptor_allocator.cpp
     resources.rc
 )
+target_sources(main
+    PRIVATE
+    FILE_SET cxx_modules TYPE CXX_MODULES
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src/modules
+    FILES
+    src/modules/logging.ixx
+    src/modules/common.ixx
+    src/modules/input.ixx
+    src/modules/camera.ixx
+    src/modules/command_queue.ixx
+    src/modules/upload_buffer.ixx
+    src/modules/descriptor_allocator.ixx
+    src/modules/application.ixx
+    src/modules/window.ixx
+)
 target_compile_features(main PRIVATE cxx_std_23)
+set_target_properties(main PROPERTIES CXX_SCAN_FOR_MODULES ON)
 target_include_directories(main PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # -------------------------------

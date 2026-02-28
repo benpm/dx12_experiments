@@ -1,4 +1,8 @@
-#pragma once
+module;
+
+#if defined(__clang__)
+    #define FMT_CONSTEVAL
+#endif
 
 #include <Windows.h>
 
@@ -20,14 +24,17 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
+#include <cmath>
+#include <exception>
 #include <string>
+#include <spdlog/spdlog.h>
 
-#include <logging.hpp>
+export module common;
 
-using namespace Microsoft::WRL;
-using namespace DirectX;
+export using namespace Microsoft::WRL;
+export using namespace DirectX;
 
-inline void chkDX(HRESULT hr)
+export inline void chkDX(HRESULT hr)
 {
     if (FAILED(hr)) {
         spdlog::error("chkDX failed with HRESULT: {:#010x}", static_cast<uint32_t>(hr));
@@ -35,12 +42,12 @@ inline void chkDX(HRESULT hr)
     }
 }
 
-constexpr float pi = XM_PI;
-constexpr float pi2 = XM_PIDIV2;
-constexpr float pi4 = XM_PIDIV4;
-constexpr float tau = XM_2PI;
+export constexpr float pi = XM_PI;
+export constexpr float pi2 = XM_PIDIV2;
+export constexpr float pi4 = XM_PIDIV4;
+export constexpr float tau = XM_2PI;
 
-template <uint8_t D> struct vec
+export template <uint8_t D> struct vec
 {
     static_assert(D >= 2 && D <= 4, "Invalid vector dimension");
 
@@ -66,18 +73,16 @@ template <uint8_t D> struct vec
     {
         return { XMVectorDivide(data, other.data) };
     }
-    // Copy-assign XMVECTOR
     vec<D>& operator=(const XMVECTOR& other)
     {
         data = other;
         return *this;
     }
 
-    // Conversion operator to XMVECTOR
     operator XMVECTOR() const { return data; }
 };
 
-struct vec2 : public vec<2>
+export struct vec2 : public vec<2>
 {
     vec2() = default;
     vec2(const XMVECTOR& data) : vec<2>(data) {}
@@ -91,7 +96,7 @@ struct vec2 : public vec<2>
     vec2& operator=(const XMVECTOR& other) { return static_cast<vec2&>(vec<2>::operator=(other)); }
 };
 
-struct vec3 : public vec<3>
+export struct vec3 : public vec<3>
 {
     vec3() = default;
     vec3(const XMVECTOR& data) : vec<3>(data) {}
@@ -107,7 +112,7 @@ struct vec3 : public vec<3>
     vec3& operator=(const XMVECTOR& other) { return static_cast<vec3&>(vec<3>::operator=(other)); }
 };
 
-struct vec4 : public vec<4>
+export struct vec4 : public vec<4>
 {
     vec4() = default;
     vec4(const XMVECTOR& data) : vec<4>(data) {}
@@ -125,7 +130,7 @@ struct vec4 : public vec<4>
     vec4& operator=(const XMVECTOR& other) { return static_cast<vec4&>(vec<4>::operator=(other)); }
 };
 
-struct mat4
+export struct mat4
 {
     XMMATRIX data = XMMatrixIdentity();
 
@@ -148,36 +153,31 @@ struct mat4
     operator XMMATRIX() const { return data; }
 };
 
-// Vector-matrix multiply
-inline vec4 operator*(const vec4& v, const mat4& m)
+export inline vec4 operator*(const vec4& v, const mat4& m)
 {
     return { XMVector4Transform(v, m) };
 }
 
-// Degrees to radians literal
-inline constexpr float operator""_deg(long double degrees)
+export inline constexpr float operator""_deg(long double degrees)
 {
     return static_cast<float>(degrees) * pi / 180.0f;
 }
-inline constexpr float operator""_deg(unsigned long long degrees)
+export inline constexpr float operator""_deg(unsigned long long degrees)
 {
     return static_cast<float>(degrees) * pi / 180.0f;
 }
 
-// Kilobytes to bytes
-inline constexpr size_t operator""_KB(unsigned long long v)
+export inline constexpr size_t operator""_KB(unsigned long long v)
 {
     return static_cast<size_t>(v * 1024uLL);
 }
 
-// Megabytes to bytes
-inline constexpr size_t operator""_MB(unsigned long long v)
+export inline constexpr size_t operator""_MB(unsigned long long v)
 {
     return static_cast<size_t>(v * 1024uLL * 1024uLL);
 }
 
-// Returns the given size aligned to the given power-of-2 alignment
-inline constexpr size_t align(const size_t size, const size_t alignment)
+export inline constexpr size_t align(const size_t size, const size_t alignment)
 {
     assert((alignment & (alignment - 1)) == 0 && "Alignment must be a power of 2");
     return (size + alignment - 1) & ~(alignment - 1);

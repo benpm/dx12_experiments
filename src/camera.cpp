@@ -1,4 +1,9 @@
-#include <camera.hpp>
+module;
+
+#include <DirectXMath.h>
+#include <cmath>
+
+module camera;
 
 mat4 Camera::proj() const
 {

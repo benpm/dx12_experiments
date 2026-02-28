@@ -1,7 +1,17 @@
+module;
+
+#if defined(__clang__)
+    #define FMT_CONSTEVAL
+#endif
+
 #include <cstdio>
-#include <logging.hpp>
+#include <windows.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+
+module logging;
 
 void setupLogging()
 {

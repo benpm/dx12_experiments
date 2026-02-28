@@ -1,8 +1,7 @@
-#pragma once
+module;
 
-// Workaround for fmt consteval issue with clang
 #if defined(__clang__)
-    #define FMT_CONSTEVAL
+#define FMT_CONSTEVAL
 #endif
 
 #include <spdlog/fmt/fmt.h>
@@ -25,12 +24,12 @@
 #include <codecvt>
 #include <locale>
 
+export module logging;
+
 namespace spdlog::sinks
 {
     template <typename Mutex> class error_proxy_sink : public base_sink<Mutex>
     {
-        /* Thanks to @tt4g for this class
-     * (https://github.com/gabime/spdlog/issues/1363#issuecomment-567068416) */
        private:
         using BaseSink = base_sink<Mutex>;
 
@@ -63,13 +62,12 @@ namespace spdlog::sinks
         void set_formatter_(std::unique_ptr<spdlog::formatter> sink_formatter) override
         {
             BaseSink::formatter_ = std::move(sink_formatter);
-
             sink_->set_formatter(BaseSink::formatter_->clone());
         }
     };
 
     using error_proxy_sink_mt = error_proxy_sink<std::mutex>;
     using error_proxy_sink_st = error_proxy_sink<spdlog::details::null_mutex>;
-}  // namespace spdlog::sinks
+}
 
-void setupLogging();
+export void setupLogging();
